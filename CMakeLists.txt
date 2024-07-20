@@ -3,9 +3,30 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 ## Define project
 ########################################################################################################################
+
+set(CURRENT_PROJECT_MAJOR_VER 1)
+set(CURRENT_PROJECT_MINOR_VER 2)
+set(CURRENT_PROJECT_PATCH_VER 0)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CURRENT_BUILD_TYPE "Debug")
+    set(CURRENT_PROJECT_BUILD_VER 2)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CURRENT_BUILD_TYPE "Release")
+    set(CURRENT_PROJECT_BUILD_VER 1)
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(CURRENT_BUILD_TYPE "RelWithDebInfo")
+    set(CURRENT_PROJECT_BUILD_VER 4)
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    set(CURRENT_BUILD_TYPE "MinSizeRel")
+    set(CURRENT_PROJECT_BUILD_VER 8)
+endif()
+
+message(STATUS "Build Type : ${CMAKE_BUILD_TYPE}")
+
 project(
         Ammo_Patcher
-        VERSION 1.0.7
+        VERSION "${CURRENT_PROJECT_MAJOR_VER}.${CURRENT_PROJECT_MINOR_VER}.${CURRENT_PROJECT_PATCH_VER}.${CURRENT_PROJECT_BUILD_VER}"
         DESCRIPTION "A simple SKSE plugin built with CommonLibSSE to patch AMMO"
         LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
@@ -84,12 +105,6 @@ FetchContent_MakeAvailable(json)
 
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources} ${misc} AUTHOR ${PROJECT_AUTHOR})
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
-# Ensure 7z is available
-find_program(SEVEN_ZIP_EXECUTABLE NAMES 7z 7za)
-
-if(NOT SEVEN_ZIP_EXECUTABLE)
-    message(FATAL_ERROR "7-Zip (7z or 7za) not found. Please install 7-Zip.")
-endif()
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE
@@ -112,26 +127,14 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include"
 install(TARGETS ${PROJECT_NAME}
         DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
-#adding a define for NDEBUG for future uses(if any)
-if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
-    add_definitions(-DNDEBUG)
-endif()
-
 
 ########################################################################################################################
 ## Automatic plugin deployment
 ########################################################################################################################
 # Automatic deployment to FOMOD directory.
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(BUILD_NAME "Debug")
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(BUILD_NAME "Release")
-        elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-            set(BUILD_NAME "RelWithDebInfo")
-                elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-                    set(BUILD_NAME "MinSizeRel")
-endif()
-message("Build Type : ${CMAKE_BUILD_TYPE}")
+set(CONTRIB_PROJECT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/Plugin - ${CURRENT_BUILD_TYPE}/")
+set(CONTRIB_CONFIGURATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Configuration/")
+set(CONTRIB_COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/Common/")
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/Plugin - ${BUILD_NAME}/"
@@ -170,10 +173,11 @@ foreach (DEPLOY_TARGET $ENV{SkyrimPluginTargets})    #set your "SkyrimPluginTarg
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/Configuration/My Config/${PROJECT_NAME}.json" "${DEPLOY_TARGET}/Common For ${PROJECT_NAME}/SKSE/Plugins/")
 endforeach()
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/skse-fomod.cmake)
 
 set(ZIP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution")
 set(OUTPUT_LOG "${CMAKE_CURRENT_SOURCE_DIR}/7z_output.log")
-set(TARGET_ZIP "${PROJECT_NAME}_${PROJECT_VERSION}.7z")
+set(TARGET_ZIP "${PROJECT_NAME}_${CURRENT_PROJECT_MAJOR_VER}.${CURRENT_PROJECT_MINOR_VER}.${CURRENT_PROJECT_PATCH_VER}.7z")
 
 ADD_CUSTOM_COMMAND(TARGET ${PROJECT_NAME} POST_BUILD
 		COMMAND ${SEVEN_ZIP_EXECUTABLE} a -t7z -mx=9 "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Artifact/${TARGET_ZIP}" "${ZIP_DIR}/*" > ${OUTPUT_LOG}
@@ -183,7 +187,7 @@ set(FOMOD_INFO_DATA
 "<fomod> \n"
 "	<Name>${PROJECT_NAME}</Name> \n"
 "	<Author>${PROJECT_AUTHOR}</Author> \n"
-"	<Version>${PROJECT_VERSION}</Version> \n"
+"	<Version>${CURRENT_PROJECT_MAJOR_VER}.${CURRENT_PROJECT_MINOR_VER}.${CURRENT_PROJECT_PATCH_VER}</Version> \n"
 "	<Website>https://www.nexusmods.com/skyrimspecialedition/mods/109061/</Website> \n"
 "	<Description>\n"
 "A simple SKSE plugin to patch All AMMO.\n"
@@ -213,7 +217,7 @@ set(WORKFLOW_FILE_DATA
     "\n"
     "env:\n"
     "  PROJECT_NAME: ${PROJECT_NAME}\n"
-    "  PROJECT_VERSION: ${PROJECT_VERSION}\n"
+    "  PROJECT_VERSION: ${CURRENT_PROJECT_MAJOR_VER}.${CURRENT_PROJECT_MINOR_VER}.${CURRENT_PROJECT_PATCH_VER}\n"
     "\n"
     "\n"
     "jobs:\n"

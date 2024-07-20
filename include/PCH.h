@@ -122,4 +122,10 @@ namespace util {
 #include <nlohmann/json.hpp>
 
 namespace fs = std::filesystem;
-using nJson = nlohmann::json;
+using ordered_nJson = nlohmann::ordered_json;
+
+// Extra Utility operator for size_t numbers
+constexpr size_t operator"" sz(unsigned long long x)
+{
+	return static_cast<size_t>(x);
+}

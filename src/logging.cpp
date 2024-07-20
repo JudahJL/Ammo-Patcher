@@ -2,7 +2,7 @@
 
 void AP::InitializeLogging()
 {
-	auto path = logger::log_directory();
+	std::optional<fs::path> path = logger::log_directory();
 
 	if (!path) {
 		util::report_and_fail("Unable to lookup SKSE logs directory.");
@@ -12,6 +12,53 @@ void AP::InitializeLogging()
 	
 	auto log = std::make_shared<spdlog::logger>(SKSE::PluginDeclaration::GetSingleton()->GetName().data());
 
+Logging::Logging(spdlog::level::level_enum CommonLevel, std::string_view Name)
+{
+	std::optional<fs::path> path = logger::log_directory();
+
+	if (!path) {
+		util::report_and_fail("Unable to lookup SKSE logs directory.");
+	}
+
+	*path /= std::format("{}.log", Name);
+
+	std::shared_ptr<spdlog::logger> log = std::make_shared<spdlog::logger>(Name.data());
+
+	SetupLog(path, log, CommonLevel, CommonLevel);
+}
+
+Logging::Logging(spdlog::level::level_enum SetLevel, spdlog::level::level_enum FlushLevel, std::string_view Name)
+{
+	std::optional<fs::path> path = logger::log_directory();
+
+	if (!path) {
+		util::report_and_fail("Unable to lookup SKSE logs directory.");
+	}
+
+	*path /= std::format("{}.log", Name);
+
+	std::shared_ptr<spdlog::logger> log = std::make_shared<spdlog::logger>(Name.data());
+
+	SetupLog(path, log, SetLevel, FlushLevel);
+}
+
+Logging::Logging(std::string_view Name)
+{
+	std::optional<fs::path> path = logger::log_directory();
+
+	if (!path) {
+		util::report_and_fail("Unable to lookup SKSE logs directory.");
+	}
+
+	*path /= std::format("{}.log", Name);
+
+	std::shared_ptr<spdlog::logger> log = std::make_shared<spdlog::logger>(Name.data());
+
+	SetupLog(path, log);
+}
+
+void Logging::SetupLog(std::optional<fs::path> path, std::shared_ptr<spdlog::logger>& log, spdlog::level::level_enum SetLevel, spdlog::level::level_enum FlushLevel)
+{
 	if (IsDebuggerPresent()) {
 		log->sinks().reserve(2);
 		log->sinks().push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
@@ -19,12 +66,9 @@ void AP::InitializeLogging()
 		log->sinks().reserve(1);
 	}
 	log->sinks().push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
-	
-	const char* pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v";
-	const auto& commonLogLevel{ spdlog::level::info }; //Type: spdlog::level::level_enum
 
-	log->set_level(commonLogLevel);
-	log->flush_on(commonLogLevel);
+	log->set_level(SetLevel);
+	log->flush_on(FlushLevel);
 	set_default_logger(std::move(log));
 	spdlog::set_pattern(pattern);
 }
