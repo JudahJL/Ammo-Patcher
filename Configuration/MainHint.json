@@ -1,5 +1,5 @@
 {
-  "Logging": { "LogLevel": "Choose one of: trace, debug, info, warn, err, critical.\nTrace is useless(For Now)" },
+  "Logging": { "LogLevel": "Choose one of: trace, debug, info, warning, error, critical, off." },
   "User Details": {
     "Username": "The Name that should appear in the logs"
   },

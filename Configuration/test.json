@@ -1,12 +1,78 @@
 {
-    "AMMO FormID to Exclude": [
-        "Skyrim.esm|0x01C789",
-		    "blah blah.esl|0x819",
-		    "ccBGSSSE002-ExoticArrows.esl|0x000802"
-    ],
-    "Mod File(s) to Exclude":[
-        "Sneak Tools (Minimal).esp",
-		    "blah blah.esl",
-		    "blah blah.esm"
-    ]
+  "Logging": {
+    "LogLevel": "trace"
+  },
+  "User Details": {
+    "Username": "NoName365"
+  },
+  "AMMO": {
+    "Infinite AMMO": {
+      "Player": true,
+      "Teammate": true
+    },
+    "Arrow": {
+      "Enable Arrow Patch": true,
+      "Change Gravity": {
+        "Enable": true,
+        "Gravity": 0.0
+      },
+      "Change Speed": {
+        "Enable": true,
+        "Speed": 9000.0
+      },
+      "Limit Speed": {
+        "Enable": false,
+        "Min": 3000.0,
+        "Max": 12000.0
+      },
+      "Randomize Speed": {
+        "Enable": true,
+        "Min": 3000.0,
+        "Max": 12000.0
+      },
+      "Limit Damage": {
+        "Enable": false,
+        "Min": 10.0,
+        "Max": 1000.0
+      },
+      "Sound": {
+        "Change Sound Level": {
+          "Enable": false,
+          "Sound Level": "kSilent"
+        }
+      }
+    },
+    "Bolt": {
+      "Enable Bolt Patch": true,
+      "Change Gravity": {
+        "Enable": true,
+        "Gravity": 0.0
+      },
+      "Change Speed": {
+        "Enable": true,
+        "Speed": 10800.0
+      },
+      "Limit Speed": {
+        "Enable": false,
+        "Min": 4000.0,
+        "Max": 12000.0
+      },
+      "Randomize Speed": {
+        "Enable": true,
+        "Min": 3000.0,
+        "Max": 12000.0
+      },
+      "Limit Damage": {
+        "Enable": false,
+        "Min": 10.0,
+        "Max": 1000.0
+      },
+      "Sound": {
+        "Change Sound Level": {
+          "Enable": false,
+          "Sound Level": "kSilent"
+        }
+      }
+    }
+  }
 }

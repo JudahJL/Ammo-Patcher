@@ -1,71 +1,68 @@
-#include "UI.h"
 #include "DataHandler.h"
+#include "UI.h"
+#include "utils.h"
 
-void UI::Register()
-{
-	if (!SKSEMenuFramework::IsInstalled()) {
-		logger::error("Unable to Register For SKSEMenuFramework, Please install SKSEMenuFramework to configure the Json Files(if you want to)");
-		return;
-	}
-
-	CustomLogger*                c = CustomLogger::GetSingleton();
-	SMFRenderer*                 s = GetSingleton();
-	std::unique_lock<std::mutex> lock(s->_lock);
-
-	std::ifstream FileContainingHintsForMain("Data/SKSE/Plugins/Ammo Patcher Hints/MainHint.json");
-	if (FileContainingHintsForMain.is_open()) {
-		FileContainingHintsForMain >> s->_HintsForMain;
-	} else {
-		c->AddLog("Failed to open MainHint.json");
-		lock.unlock();
-		return;
-	}
-
-	
-	std::ifstream FileContainingHintsForExclusions("Data/SKSE/Plugins/Ammo Patcher Hints/ExclusionHint.json");
-	if (FileContainingHintsForExclusions.is_open()) {
-		FileContainingHintsForExclusions >> s->_HintsForExclusions;
-	} else {
-		c->AddLog("Failed to open ExclusionHint.json");
-		lock.unlock();
-		return;
-	}
-
-	s->GetAllExclusionJsons();
-
-	SKSEMenuFramework::SetSection("Ammo Patcher");
-	SKSEMenuFramework::AddSectionItem("Main", SMFRenderer::RenderMain);
-	SKSEMenuFramework::AddSectionItem("Exclusions", SMFRenderer::RenderExclusions);
-
-	s->_LogWindow = SKSEMenuFramework::AddWindow(s->RenderLogWindow);
-
-	logger::info("Registered For SKSEMenuFramework");
+SMFRenderer* SMFRenderer::GetSingleton() {
+	static SMFRenderer Singleton;
+	return std::addressof( Singleton );
 }
 
-void __stdcall UI::AP::Render()
-{
-	DataHandler* d = DataHandler::GetSingleton();
-	if (d->_Done) {
-		jsoning::RenderJsonEditor(d->_JsonData);
+void SMFRenderer::Register() {
+	if( !SKSEMenuFramework::IsInstalled() ) {
+		logger::error( "Unable to Register For SKSEMenuFramework, Please install SKSEMenuFramework to configure the Json Files(if you want to)" );
+		return;
+	}
+
+	SMFRenderer* s{ SMFRenderer::GetSingleton() };
+
+	SKSEMenuFramework::SetSection( "Ammo Patcher" );
+
+	std::ifstream FileContainingHintsForMain( "Data/SKSE/Plugins/Ammo Patcher/Hints/MainHint.json" );
+	s->_HintsForMain << FileContainingHintsForMain;
+
+	SKSEMenuFramework::AddSectionItem( "Main", SMFRenderer::RenderMain );
+
+	std::ifstream FileContainingHintsForExclusions( "Data/SKSE/Plugins/Ammo Patcher/Hints/ExclusionHint.json" );
+	s->_HintsForExclusions << FileContainingHintsForExclusions;
+
+	s->_LogWindow = SKSEMenuFramework::AddWindow( s->RenderLogWindow );
+
+	SKSEMenuFramework::AddSectionItem( "Exclusions", SMFRenderer::RenderExclusions );
+
+	/*SKSEMenuFramework::AddSectionItem("Debug", SMFRenderer::RenderDebug);*/
+	logger::info( "Registered For SKSEMenuFramework" );
+}
+
+inline void __stdcall SMFRenderer::RenderLogWindow() {
+	ImGui::SetNextWindowSize( ImVec2( 900, 900 ), ImGuiCond_FirstUseEver );
+	static std::string name{ std::format("Log Window##CustomLogger{}", SKSE::PluginDeclaration::GetSingleton()->GetName()) };
+
+	ImGui::Begin( name.c_str(), nullptr, ImGuiWindowFlags_None );
+
+	CustomLogger* c = CustomLogger::GetSingleton();
+
+	static char filterInput[128] = "";
+	ImGui::InputText( "Filter", filterInput, ((int)(sizeof( filterInput ) / sizeof( *filterInput ))) );
+
+	if( ImGui::Button( "Clear Logs" ) ) {
+		c->ClearLogs();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Close Window")) {
+	if( ImGui::Button( "Close Window" ) ) {
 		_LogWindow->IsOpen = false;
-		DataHandler*                d = DataHandler::GetSingleton();
-		std::lock_guard<std::mutex> lock(d->_lock);
 	}
 
 	ImGui::Separator();
-	ImGui::BeginChild("LogScroll");
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
+	ImGui::BeginChild( "LogScroll" );
+	ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 1 ) );
 
-	auto logs = filterInput[0] ? c->GetFilteredLogs(filterInput) : c->GetLogs();
-	for (size_t i = 0; i < logs.size(); i++) {
-		ImGui::TextUnformatted(std::format("[{}] {}", i + 1sz, logs[i]).c_str());
+	auto logs = filterInput[0] ? c->GetFilteredLogs( filterInput ) : c->GetLogs();
+	for( size_t i = 0; i < logs.size(); i++ ) {
+		ImGui::TextUnformatted( std::format( "[{}] {}", i + 1sz, logs[i] ).c_str() );
 	}
 
-	if (c->ShouldScrollToBottom()) {
-		ImGui::SetScrollHereY(1.0f);
+	if( c->ShouldScrollToBottom() ) {
+		ImGui::SetScrollHereY( 1.0f );
 		c->ResetScrollToBottom();
 	}
 
@@ -74,213 +71,298 @@ void __stdcall UI::AP::Render()
 	ImGui::End();
 }
 
-void SMFRenderer::RenderMain()
+void __stdcall SMFRenderer::RenderDebug()
 {
-	SMFRenderer* s = GetSingleton();
-
-	std::lock_guard<std::mutex> lock(s->_lock);
-	constexpr const char*       CurrentPath{ "Main." };
-
-	std::string                 MainFileName(std::format("Data/SKSE/Plugins/{}.json", SKSE::PluginDeclaration::GetSingleton()->GetName()));
-
-	ImGui::PushID(CurrentPath);
-
-	DataHandler* d = DataHandler::GetSingleton();
-
-	CustomLogger* c = CustomLogger::GetSingleton();
-
-	{
-		std::lock_guard<std::mutex> dlock(d->_lock);
-
-		s->RenderJsonEditor(CurrentPath, d->_JsonData, s->_HintsForMain);
+	if (ImGui::Button("Quit")) {
+		REX::W32::TerminateProcess(REX::W32::GetCurrentProcess(), EXIT_FAILURE);
 	}
+}
 
-	if (ImGui::Button("Save JSON")) {
-		if (s->SaveJsonToFile(MainFileName, d->_JsonData))
-			c->AddLog(std::format("{} Saved {} Successfully", d->_UserName, MainFileName));
-		else
-			c->AddLog(std::format("Failed to Save {}", MainFileName));
-	}
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("You Must Click This to SAVE any Changes");
-	}
-	{
-		if( d->_DoneAmmoPatching ) {
-			ImGui::SameLine();
-			if (ImGui::Button("Revert Changes")) {
-				d->RevertToDefault();
+void SMFRenderer::RenderMain() {
+	SMFRenderer* s{ SMFRenderer::GetSingleton() };
+
+	std::lock_guard<std::mutex> lock( s->_lock );
+	constexpr const char* CurrentPath{ "Main." };
+
+	ImGui::PushID( CurrentPath );
+
+	DataHandler*       d{ DataHandler::GetSingleton() };
+	CustomLogger*      c{ CustomLogger::GetSingleton() };
+	static std::string Selected{ fs::path(d->GetUnmodifiableSelectedPreset()).filename().string() };
+	
+	if (ImGui::BeginCombo("Selected Preset", Selected.c_str())) {
+		for (const auto& [k,_] : d->GetUnmodifiableMainJsonDataMap()) {
+			bool isSelected = (Selected == fs::path(k).filename().string());
+			if (ImGui::Selectable(fs::path(k).filename().string().c_str(), isSelected)) {
+				Selected = fs::path(k).filename().string();
 			}
-			if(ImGui::IsItemHovered()){
-				ImGui::SetTooltip("This Button will Revert ANY changes made to all AMMO Records Safely");
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
 			}
-			ImGui::SameLine();
-			if (ImGui::Button("RePatch Changes")) {
-				if (s->SaveJsonToFile(MainFileName, d->_JsonData)){
-					c->AddLog(std::format("{} Saved {} Successfully", d->_UserName, MainFileName));
-				} else {
-					c->AddLog(std::format("Failed to Save {}", MainFileName));
+		}
+		ImGui::EndCombo();
+	}
+	if (ImGui::Button("Save to File")) {
+		std::ofstream m(std::format("Data/SKSE/Plugins/Ammo Patcher/{}_Default.json", SKSE::PluginDeclaration::GetSingleton()->GetName()));
+
+		ordered_nJson n{ { "Load", Selected } };
+		if (m.is_open()) {
+			m << n;
+		}
+	}
+	if(ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Clicking this will save \n{\n\t\"Load\": \"%s\"\n}\n into Data/SKSE/Plugins/Ammo Patcher/%s_Default.json", Selected.c_str(), SKSE::PluginDeclaration::GetSingleton()->GetName().data());
+	}
+	{
+		static char buffer[256]{ "" };
+		if (ImGui::InputText("Create a Preset?", buffer, ((int)(sizeof(buffer) / sizeof(*buffer))), ImGuiInputTextFlags_EnterReturnsTrue)) {
+			std::string FileName = fs::absolute(std::format("Data/SKSE/Plugins/Ammo Patcher/Presets/{}.json", buffer)).string();
+			if (!d->GetUnmodifiableMainJsonDataMap().contains(FileName)) {
+				auto j = std::make_shared<ordered_nJson>(ordered_nJson{
+					{ "Logging", { { "LogLevel", "info" } } },
+					{ "User Details", { { "Username", "User" } } },
+					{ "AMMO", { { "Infinite AMMO", { { "Player", false },
+													   { "Teammate", false } } },
+								  { "Arrow", { { "Enable Arrow Patch", true },
+												 { "Change Gravity", { { "Enable", true },
+																		 { "Gravity", 0.0 } } },
+												 { "Change Speed", { { "Enable", true },
+																	   { "Speed", 9000.0 } } },
+												 { "Limit Speed", { { "Enable", false },
+																	  { "Min", 3000.0 },
+																	  { "Max", 12000.0 } } },
+												 { "Randomize Speed", { { "Enable", false },
+																		  { "Min", 3000.0 },
+																		  { "Max", 12000.0 } } },
+												 { "Limit Damage", { { "Enable", false },
+																	   { "Min", 10.0 },
+																	   { "Max", 1000.0 } } },
+												 { "Sound", { { "Change Sound Level", { { "Enable", false },
+																						  { "Sound Level", "kSilent" } } } } } } },
+								  { "Bolt", { { "Enable Bolt Patch", true },
+												{ "Change Gravity", { { "Enable", true },
+																		{ "Gravity", 0.0 } } },
+												{ "Change Speed", { { "Enable", true },
+																	  { "Speed", 10800.0 } } },
+												{ "Limit Speed", { { "Enable", false },
+																	 { "Min", 4000.0 },
+																	 { "Max", 12000.0 } } },
+												{ "Randomize Speed", { { "Enable", false },
+																		 { "Min", 3000.0 },
+																		 { "Max", 12000.0 } } },
+												{ "Limit Damage", { { "Enable", false },
+																	  { "Min", 10.0 },
+																	  { "Max", 1000.0 } } },
+												{ "Sound", { { "Change Sound Level", { { "Enable", false },
+																						 { "Sound Level", "kSilent" } } } } } } } } }
+				});
+
+				switch (s->CreateNewJsonFile(FileName, j))
+				{
+				case FileCreationType::OK:
+					{
+						d->GetModifiableMainJsonDataMap().insert({ FileName, j });
+						c->AddLog(std::format("{} Created {} Successfully", d->GetUsername(), FileName));
+						break;
+					}
+				case FileCreationType::Error:
+					c->AddLog(std::format("Error in Creating File {}", FileName));
+					j.reset();
+					break;
+				case FileCreationType::Duplicate:
+					c->AddLog(std::format("Not Creating Duplicate File {}", FileName));
+					j.reset();
+					break;
 				}
-				d->ReloadLoggingIfNecessary(d->_JsonData["Logging"]["LogLevel"].get<std::string>());
-				d->ProcessMainJson();
-				d->LogDataHandlerContents();
-				d->PatchAMMO();
-				c->AddLog("Repatched AMMO");
-			}
-			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("This Button will Patch AMMO Records According to The Main Json File and and the Exclusion Files.\nFirst It will Save the file.\nThen Process it.\nThen Log The Details and finally Patch The Records");
 			}
 		}
 	}
-	ImGui::Separator();
+
+	ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal, 10.0);
+
+	if (ImGui::BeginCombo("Presets", fs::path(d->GetUnmodifiableSelectedPreset()).filename().string().c_str())) {
+		for (const auto& [k, _] : d->GetUnmodifiableMainJsonDataMap()) {
+			bool isSelected = (d->GetUnmodifiableSelectedPreset() == k);
+			if (ImGui::Selectable(fs::path(k).filename().string().c_str(), isSelected)) {
+				d->SetSelectedPreset(k);
+			}
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	ImGui::Button(UI::question.c_str());
+	if( ImGui::IsItemHovered() ) {
+		ImGui::SetTooltip("All the presets available for this Mod. Below Details will get loaded Accordingly");
+	}
+	s->RenderJsonEditor( CurrentPath, d->GetModifiableMainJsonData(), s->_HintsForMain );
+
+	if( ImGui::Button( "Save JSON" ) ) {
+		if (s->SaveJsonToFile(d->GetUnmodifiableMainJsonPair()))
+			c->AddLog(std::format("{} Saved {} Successfully", d->GetUsername(), d->GetUnmodifiableMainJsonPair()->first));
+		else
+			c->AddLog(std::format("Failed to Save {}", d->GetUnmodifiableMainJsonPair()->first));
+	}
+	if( ImGui::IsItemHovered() ) {
+		ImGui::SetTooltip( "You Must Click This to SAVE any Changes" );
+	}
+	if( d->GetDoneAmmoPatching() ) {
+		ImGui::SameLine();
+		if( ImGui::Button( "Revert Changes" ) ) {
+			d->RevertToDefault();
+		}
+		if( ImGui::IsItemHovered() ) {
+			ImGui::SetTooltip( "This Button will Revert ANY changes made to all AMMO Records Safely" );
+		}
+		ImGui::SameLine();
+		if( ImGui::Button( "RePatch Changes" ) ) {
+			if (s->SaveJsonToFile(d->GetUnmodifiableMainJsonPair())) {
+				c->AddLog(std::format("{} Saved {} Successfully", d->GetUsername(), d->GetUnmodifiableMainJsonPair()->first));
+			} else {
+				c->AddLog(std::format("Failed to Save {}", d->GetUnmodifiableMainJsonPair()->first));
+			}
+			d->ChangeLogLevel( d->GetUnmodifiableMainJsonData()->at( "Logging" ).at( "LogLevel" ) );
+			d->ProcessMainJson();
+			d->LogDataHandlerContents();
+			d->PatchAMMO();
+			c->AddLog( "Repatched AMMO" );
+		}
+		if( ImGui::IsItemHovered() ) {
+			ImGui::SetTooltip( "This Button will Patch AMMO Records According to The Main Json File and and the Exclusion Files.\nFirst It will Save the file.\nThen Process it.\nThen Log The Details and finally Patch The Records" );
+		}
+	}
 	static ImVec2 LoggingButtonSize;
-	ImGui::GetContentRegionAvail(std::addressof(LoggingButtonSize));
+	ImGui::GetContentRegionAvail( std::addressof( LoggingButtonSize ) );
 	LoggingButtonSize.y = 0;
-	if (ImGui::Button(CustomLogger::GetSingleton()->GetLatestLog().c_str(), LoggingButtonSize)) {
+	if( ImGui::Button( CustomLogger::GetSingleton()->GetLatestLog().c_str(), LoggingButtonSize ) ) {
 		_LogWindow->IsOpen = true;
 	}
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Click this to open Log Window");
+	if( ImGui::IsItemHovered() ) {
+		ImGui::SetTooltip( "Click this to open Log Window" );
 	}
 
-void __stdcall UI::Exclusions::Render()
+	ImGui::PopID();
+}
+
+void SMFRenderer::RenderExclusions()
 {
-	SMFRenderer*                 s = GetSingleton();
-	CustomLogger*                c = CustomLogger::GetSingleton();
-	std::unique_lock<std::mutex> SMFLock(s->_lock);
+	SMFRenderer*                 s{ GetSingleton() };
+	CustomLogger*                c{ CustomLogger::GetSingleton() };
+	std::unique_lock<std::mutex> SMFLock( s->_lock );
 
-	if (!s->_ExclusionJsons.empty()) {
-		size_t ExclusionJsonsSize{ s->_ExclusionJsons.size() };
-		for (size_t index = 0sz; index < ExclusionJsonsSize; index++) {
-			std::string                  name(s->_ExclusionJsons[index].first);
-			std::shared_ptr<ordered_nJson>       ej{ s->_ExclusionJsons[index].second };
-			constexpr static const char* key1{ "AMMO FormID to Exclude" };
-			constexpr static const char* key2{ "Mod File(s) to Exclude" };
-			std::string                  path1(name + "." + key1);
-			std::string                  path2(name + "." + key2);
-			ordered_nJson&                       AMMOFormIDToExclude{ ej->at(key1) };
-			ordered_nJson&                       ModFilesToExclude{ ej->at(key2) };
-			if (ImGui::TreeNode(fs::path(name).filename().string().c_str())) {
-				ImGui::PushID(path1.c_str());
+	if( !s->_ExclusionJsons.empty() ) {
+		for (auto& [name, ej] : s->_ExclusionJsons) {
+			constexpr static const char*   key1{ "AMMO FormID to Exclude" };
+			constexpr static const char*   key2{ "Mod File(s) to Exclude" };
+			std::string                    path1(name + "." + key1);
+			std::string                    path2(name + "." + key2);
+			ordered_nJson&                 AMMOFormIDToExclude{ ej->at(key1) };
+			ordered_nJson&                 AMMOFilesToExclude{ ej->at(key2) };
+			if( ImGui::TreeNode( fs::path( name ).filename().string().c_str() ) ) {
+				ImGui::PushID( path1.c_str() );
 				if (ImGui::TreeNode(key1)) {
-					s->RenderJsonEditor(path1, AMMOFormIDToExclude, s->_HintsForExclusions);
-					DataHandler*                 d = DataHandler::GetSingleton();
-					std::unique_lock<std::mutex> dlock(d->_lock);
-					if (d->_DoneAmmoPatching) {
-						static std::vector<std::string> a_value_for_FormID(ExclusionJsonsSize, d->_AmmoInfo[0]["AmmoString"].get<std::string>());  //used to store the selected value of _AmmoInfo of the currently traversed json
-						static std::vector<size_t>      CurrentIterationForFormID(ExclusionJsonsSize, 0sz);                                        //used to store the selected index of _AmmoInfo of the currently traversed json
-
-						if (a_value_for_FormID.size() != ExclusionJsonsSize) {
-							a_value_for_FormID.resize(ExclusionJsonsSize, d->_AmmoInfo[0]["AmmoString"].get<std::string>());
-						}
-						if (CurrentIterationForFormID.size() != ExclusionJsonsSize) {
-							CurrentIterationForFormID.resize(ExclusionJsonsSize, 0sz);
-						}
-
-						InlineUtils::limit(CurrentIterationForFormID[index], 0sz, d->_AmmoInfo.size());
+					s->RenderJsonEditor( path1, AMMOFormIDToExclude, s->_HintsForExclusions.at( key1 ) );
+					DataHandler* d{ DataHandler::GetSingleton() };
+					if( d->GetDoneAmmoPatching() ) {
+						auto&              currentIndex{ s->_Key1Index.at(name) };
+						auto&              currentValue{ s->_Key1Values.at(name) };
 						static std::string previewValue;
-						previewValue = (d->_AmmoInfo[CurrentIterationForFormID[index]]["AmmoName"].is_null() || d->_AmmoInfo[CurrentIterationForFormID[index]]["AmmoName"].get<std::string>().empty()) ? d->_AmmoInfo[CurrentIterationForFormID[index]]["AmmoString"].get<std::string>() : std::format("{},{}", d->_AmmoInfo[CurrentIterationForFormID[index]]["AmmoName"].get<std::string>(), d->_AmmoInfo[CurrentIterationForFormID[index]]["AmmoString"].get<std::string>());
+						previewValue = (d->GetUnmodifiableAmmoInfo().at(currentIndex).at("AmmoName").is_null() || d->GetUnmodifiableAmmoInfo()[currentIndex]["AmmoName"].get<std::string>().empty()) ? d->GetUnmodifiableAmmoInfo()[currentIndex]["AmmoString"].get<std::string>() : std::format("{},{}", d->GetUnmodifiableAmmoInfo()[currentIndex]["AmmoName"].get<std::string>(), d->GetUnmodifiableAmmoInfo()[currentIndex]["AmmoString"].get<std::string>());
 
-						if (ImGui::BeginCombo(key1, previewValue.c_str())) {
-							for (size_t ii = 0; ii < d->_AmmoInfo.size(); ii++) {
-								bool        isSelected = (CurrentIterationForFormID[index] == ii);
+						if( ImGui::BeginCombo( key1, previewValue.c_str() ) ) {
+							for( size_t ii = 0; ii < d->GetUnmodifiableAmmoInfo().size(); ii++ ) {
+								bool        isSelected = (currentIndex == ii);
+
 								static std::string previewOptionsValue;
-								previewOptionsValue = (d->_AmmoInfo[ii]["AmmoName"].is_null() || d->_AmmoInfo[ii]["AmmoName"].get<std::string>().empty()) ? d->_AmmoInfo[ii]["AmmoString"].get<std::string>() : std::format("{},{}", d->_AmmoInfo[ii]["AmmoName"].get<std::string>(), d->_AmmoInfo[ii]["AmmoString"].get<std::string>());
+								previewOptionsValue = (d->GetUnmodifiableAmmoInfo().at( ii ).at( "AmmoName" ).is_null() || d->GetUnmodifiableAmmoInfo().at( ii ).at( "AmmoName" ).get<std::string>().empty()) ? d->GetUnmodifiableAmmoInfo().at( ii ).at( "AmmoString" ).get<std::string>() : std::format( "{},{}", d->GetUnmodifiableAmmoInfo().at( ii ).at( "AmmoName" ).get<std::string>(), d->GetUnmodifiableAmmoInfo().at( ii ).at( "AmmoString" ).get<std::string>() );
 
-								if (ImGui::Selectable(previewOptionsValue.c_str(), isSelected)) {
-									CurrentIterationForFormID[index] = ii;
-									a_value_for_FormID[index] = d->_AmmoInfo[CurrentIterationForFormID[index]]["AmmoString"].get<std::string>();
+								if( ImGui::Selectable( previewOptionsValue.c_str(), isSelected ) ) {
+									currentIndex = ii;
+									currentValue = d->GetUnmodifiableAmmoInfo().at(ii).at("AmmoString").get<std::string>();
 								}
-								if (isSelected) {
+								if( isSelected ) {
 									ImGui::SetItemDefaultFocus();
 								}
 							}
 							ImGui::EndCombo();
 						}
 						ImGui::SameLine();
-						if (ImGui::Button(UI::plus.c_str())) {
-							AMMOFormIDToExclude.push_back(a_value_for_FormID[index]);
-							d->_FormIDArray.insert(a_value_for_FormID[index]);
-							c->AddLog(std::format("{} Added '{}' into '{}' in the section {}", d->_UserName, a_value_for_FormID[index], name, key1));
+						if( ImGui::Button( UI::plus.c_str() ) ) {
+							AMMOFormIDToExclude.push_back(currentValue);
+							d->GetModifiableFormIDArray().insert(currentValue);
+							c->AddLog(std::format("{} Added '{}' into '{}' in the section {}", d->GetUsername(), currentValue, name, key1));
 							ImGui::TreePop();
 							ImGui::PopID();
 							ImGui::TreePop();
 							SMFLock.unlock();
-							dlock.unlock();
 							return;
 						}
 					}
 					ImGui::TreePop();
 				}
-				if (ImGui::TreeNode(key2)) {
-					s->RenderJsonEditor(path1, ModFilesToExclude, s->_HintsForExclusions);
-					DataHandler*                 d = DataHandler::GetSingleton();
-					std::unique_lock<std::mutex> ddlock(d->_lock);
-					if (d->_DoneAmmoPatching) {
-						static std::vector<std::string> a_value(ExclusionJsonsSize, d->_AmmoModFiles[0]);
-						static std::vector<size_t>      CurrentIteration(ExclusionJsonsSize, 0sz);
+				if( ImGui::TreeNode( key2 ) ) {
+					s->RenderJsonEditor( path1, AMMOFilesToExclude, s->_HintsForExclusions.at( key2 ) );
+					DataHandler* d = DataHandler::GetSingleton();
+					if( d->GetDoneAmmoPatching() ) {
+						auto& sjdnfo{ s->_Key2Index.at(name) };
+						auto& sjdbsbdj{s->_Key2Values.at(name)};
 
-						if (a_value.size() != ExclusionJsonsSize) {
-							a_value.resize(ExclusionJsonsSize, d->_AmmoModFiles[0]);
-						}
-						if (CurrentIteration.size() != ExclusionJsonsSize) {
-							CurrentIteration.resize(ExclusionJsonsSize, 0sz);
-						}
 
-						InlineUtils::limit(CurrentIteration[index], 0sz, d->_AmmoModFiles.size());
-
-						if (ImGui::BeginCombo(key2, d->_AmmoModFiles[CurrentIteration[index]].c_str())) {
-							for (size_t iii = 0; iii < d->_AmmoModFiles.size(); iii++) {
-								bool isSelected = (CurrentIteration[index] == iii);
-								if (ImGui::Selectable(d->_AmmoModFiles[iii].c_str(), isSelected)) {
-									CurrentIteration[index] = iii;
-									a_value[index] = d->_AmmoModFiles[CurrentIteration[index]];
+						if (ImGui::BeginCombo(key2, d->GetUnmodifiableAmmoModFiles().at(sjdnfo).c_str())) {
+							for( size_t iii = 0; iii < d->GetUnmodifiableAmmoModFiles().size(); iii++ ) {
+								bool isSelected = (sjdnfo == iii);
+								if( ImGui::Selectable( d->GetUnmodifiableAmmoModFiles().at( iii ).c_str(), isSelected ) ) {
+									sjdnfo = iii;
+									sjdbsbdj = d->GetUnmodifiableAmmoModFiles().at(iii);
 								}
-								if (isSelected) {
+								if( isSelected ) {
 									ImGui::SetItemDefaultFocus();
 								}
 							}
 							ImGui::EndCombo();
 						}
 						ImGui::SameLine();
-						if (ImGui::Button(UI::plus.c_str())) {
-							ModFilesToExclude.push_back(a_value[index]);
-							d->_TESFileArray.insert(a_value[index]);
-							c->AddLog(std::format("{} Added '{}' into '{}' in the section {}", d->_UserName, a_value[index], name, key2));
+						if( ImGui::Button( UI::plus.c_str() ) ) {
+							AMMOFilesToExclude.push_back(sjdbsbdj);
+							d->GetModifiableTESFileArray().insert(sjdbsbdj);
+							c->AddLog(std::format("{} Added '{}' into '{}' in the section {}", d->GetUsername(), sjdbsbdj, name, key2));
 							ImGui::TreePop();
 							ImGui::PopID();
 							ImGui::TreePop();
 							SMFLock.unlock();
-							ddlock.unlock();
 							return;
 						}
 					}
 					ImGui::TreePop();
 				}
 
-				if (ImGui::Button("Save JSON")) {
-					DataHandler*                d = DataHandler::GetSingleton();
-					std::lock_guard<std::mutex> lock(d->_lock);
-					if (s->SaveJsonToFile(name, ej))
-						c->AddLog(std::format("{} Saved {} Successfully", d->_UserName, name));
+				DataHandler* d{ DataHandler::GetSingleton() };
+
+				if( ImGui::Button( "Save JSON" ) ) {
+					if( s->SaveJsonToFile( name, ej ) )
+						c->AddLog( std::format( "{} Saved {} Successfully", d->GetUsername(), name ) );
 					else
-						c->AddLog(std::format("Failed to Save {}", name));
+						c->AddLog( std::format( "Failed to Save {}", name ) );
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Delete File")) {
-					if (fs::remove(name)) {
-						DataHandler*                 d = DataHandler::GetSingleton();
-						std::unique_lock<std::mutex> lock(d->_lock);
+				if( ImGui::Button( "Delete File" ) ) {
+					if( fs::remove( name ) ) {
 						ej.reset();
-						s->_ExclusionJsons.erase(s->_ExclusionJsons.begin() + index);
-						c->AddLog(std::format("{} Deleted {} Successfully", d->_UserName, name));
+						s->_ExclusionJsons.erase(name);
+						s->_Key1Index.erase(name);
+						s->_Key1Values.erase(name);
+						s->_Key2Index.erase(name);
+						s->_Key2Values.erase(name);
+						c->AddLog( std::format( "{} Deleted {} Successfully", d->GetUsername(), name ) );
 
 						ImGui::PopID();
 						ImGui::TreePop();
-						lock.unlock();
 						SMFLock.unlock();
 						return;
 					} else {
-						c->AddLog(std::format("Failed to Delete {}", name));
+						c->AddLog( std::format( "Failed to Delete {}", name ) );
 					}
 				}
 				ImGui::PopID();
@@ -288,83 +370,111 @@ void __stdcall UI::Exclusions::Render()
 			}
 		}
 	}
-	static char buffer[256] = "";
-	if (ImGui::InputText("Create a Exclusion File?", buffer, ((int)(sizeof(buffer) / sizeof(*buffer))), ImGuiInputTextFlags_EnterReturnsTrue)) {
-		std::string                    FileName = std::format("Data/SKSE/Plugins/Ammo Patcher/{}.json", buffer);
-		std::shared_ptr<ordered_nJson> j = std::make_shared<ordered_nJson>(ordered_nJson{ { "AMMO FormID to Exclude", ordered_nJson::array() }, { "Mod File(s) to Exclude", ordered_nJson::array() } });
+	static char buffer[256]{ "" };
+	if( ImGui::InputText( "Create a Exclusion File?", buffer, ((int)(sizeof( buffer ) / sizeof( *buffer ))), ImGuiInputTextFlags_EnterReturnsTrue ) ) {
+		std::string     FileName = std::format( "Data/SKSE/Plugins/Ammo Patcher/Exclusions/{}.json", buffer );
+		std::shared_ptr j = std::make_shared<ordered_nJson>( ordered_nJson{ { "AMMO FormID to Exclude", ordered_nJson::array() }, { "Mod File(s) to Exclude", ordered_nJson::array() } } );
 
-		switch (s->CreateNewJsonFile(FileName, j)) {
+		switch( s->CreateNewJsonFile( FileName, j ) ) {
 		case FileCreationType::OK:
 			{
-				s->_ExclusionJsons.push_back({ FileName, j });
-				DataHandler*                d = DataHandler::GetSingleton();
-				std::lock_guard<std::mutex> lock(d->_lock);
-				c->AddLog(std::format("{} Created {} Successfully", d->_UserName, FileName));
+				s->_ExclusionJsons.insert( { FileName, j } );
+				s->_Key1Values.insert({ FileName, "" });
+				s->_Key2Values.insert({ FileName, "" });
+				s->_Key1Index.insert({ FileName, 0sz });
+				s->_Key2Index.insert({ FileName, 0sz });
+				DataHandler* d{ DataHandler::GetSingleton() };
+				c->AddLog( std::format( "{} Created {} Successfully", d->GetUsername(), FileName ) );
 				break;
 			}
 		case FileCreationType::Error:
-			c->AddLog(std::format("Error in Creating File {}", FileName));
+			c->AddLog( std::format( "Error in Creating File {}", FileName ) );
 			j.reset();
 			break;
 		case FileCreationType::Duplicate:
-			c->AddLog(std::format("Not Creating Duplicate File {}", FileName));
+			c->AddLog( std::format( "Not Creating Duplicate File {}", FileName ) );
 			j.reset();
 			break;
 		}
 	}
 	SMFLock.unlock();
 	ImGui::SameLine();
-	ImGui::Button(UI::question.c_str());
+	ImGui::Button( UI::question.c_str() );
 
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Enter a Name with less than 256 characters.\nThe File will be created in the Appropriate Path with the Appropriate Extension");
+	if( ImGui::IsItemHovered() ) {
+		ImGui::SetTooltip( "Enter a Name with less than 256 characters.\nThe File will be created in the Appropriate Path with the Appropriate Extension" );
 	}
 	static ImVec2 LoggingButtonSize;
-	ImGui::GetContentRegionAvail(std::addressof(LoggingButtonSize));
+	ImGui::GetContentRegionAvail( std::addressof( LoggingButtonSize ) );
 	LoggingButtonSize.y = 0;
-	if (ImGui::Button(CustomLogger::GetSingleton()->GetLatestLog().c_str(), LoggingButtonSize)) {
+	if( ImGui::Button( CustomLogger::GetSingleton()->GetLatestLog().c_str(), LoggingButtonSize ) ) {
 		_LogWindow->IsOpen = true;
 	}
 }
 
-void SMFRenderer::GetAllExclusionJsons()
-{
-	DataHandler* d = DataHandler::GetSingleton();
-	if (fs::exists(d->_FolderPath) && !fs::is_empty(d->_FolderPath)) {
-		for (const fs::directory_entry& entry : fs::directory_iterator(d->_FolderPath)) {
+void SMFRenderer::GetAllExclusionJsons() {
+	constexpr const char* FolderPath{ "Data/SKSE/Plugins/Ammo Patcher/Exclusions/" };
+	if (fs::exists(FolderPath) && !fs::is_empty(FolderPath)) {
+		std::vector<std::thread> threads;
+		for (const fs::directory_entry& entry : fs::directory_iterator(FolderPath)) {
 			fs::path entry_path = entry.path();
 
-			if (!InlineUtils::resolve_symlink(entry_path, 10)) {
-				logger::error("Skipping entry due to symlink loop: {}", fs::absolute(entry_path).generic_string());
+			if( !InlineUtils::resolve_symlink( entry_path, 10 ) ) {
+				auto s{ fs::absolute(entry_path).generic_string() };
+				logger::error( "Skipping entry due to symlink loop: {}", s);
 				continue;
 			}
 
-			if (fs::is_regular_file(entry_path) && entry_path.extension() == ".json") {
-				std::string   EntryPathStr(fs::absolute(entry_path).generic_string());
+			if( fs::is_regular_file( entry_path ) && entry_path.extension() == ".json" ) {
+				
+				threads.emplace_back([entry_path ,this] {
+					std::string EntryPathStr( fs::absolute( entry_path ).generic_string() );
 
-				std::ifstream jFile(entry_path);
+				std::ifstream jFile( entry_path );
 
-				if (!jFile.is_open()) {
-					logger::error("Failed to open file: {}", EntryPathStr);
-					continue;
+				if( !jFile.is_open() ) {
+					logger::error( "Failed to open file: {}", EntryPathStr );
+					return;
 				}
-
 				try {
-					std::shared_ptr<ordered_nJson> MergeData = std::make_shared<ordered_nJson>(ordered_nJson::parse(jFile));
-					_ExclusionJsons.push_back({ EntryPathStr, MergeData });
-				} catch (const ordered_nJson::exception& e) {
-					logger::error("{}", e.what());
-				}
+					{
+						std::lock_guard<std::mutex> lock(_lock);
+						_ExclusionJsons.insert({ EntryPathStr, std::make_shared<ordered_nJson>(ordered_nJson::parse(jFile)) });
+						_Key1Values.insert({ EntryPathStr, "" });
+						_Key2Values.insert({ EntryPathStr, "" });
+						_Key1Index.insert({ EntryPathStr, 0sz });
+						_Key2Index.insert({ EntryPathStr, 0sz });
+						
+					}
+				} catch( const ordered_nJson::parse_error& e ) {
+					logger::error( "{}", e.what() );
+				} });
 			}
 		}
+		for (auto& thread : threads) {
+			thread.join();
+		}
+	} else {
+		logger::info("Didn't find any Exclusion files for UI");
 	}
 }
 
-void SMFRenderer::RenderJsonEditor(const std::string_view Path, ordered_nJson& jsonObject, ordered_nJson& hint)
+void SMFRenderer::RenderJsonEditor( const std::string_view Path, ordered_nJson& jsonObject, ordered_nJson& hint ) {
+	if( jsonObject.is_object() ) {
+		RenderJsonObject( Path, jsonObject, hint );
+	} else if( jsonObject.is_array() ) {
+		RenderJsonArray( Path, "", jsonObject, hint );
+	} else {
+		logger::error( "Weird Error Detected at SMFRenderer::RenderJsonEditor. Given json object is neither object nor array" );
+		CustomLogger::GetSingleton()->AddLog( "[error] Weird Error Detected at SMFRenderer::RenderJsonEditor. Given json object is neither object nor array" );
+	}
+}
+
+void SMFRenderer::RenderJsonEditor(const std::string_view Path, std::shared_ptr<ordered_nJson> jsonObject, ordered_nJson& hint)
 {
-	if (jsonObject.is_object()) {
+	if (jsonObject->is_object()) {
 		RenderJsonObject(Path, jsonObject, hint);
-	} else if (jsonObject.is_array()) {
+	} else if (jsonObject->is_array()) {
 		RenderJsonArray(Path, "", jsonObject, hint);
 	} else {
 		logger::error("Weird Error Detected at SMFRenderer::RenderJsonEditor. Given json object is neither object nor array");
@@ -372,212 +482,305 @@ void SMFRenderer::RenderJsonEditor(const std::string_view Path, ordered_nJson& j
 	}
 }
 
-void SMFRenderer::RenderJsonValue(const std::string_view jsonPath, const std::string& key, ordered_nJson& value, ordered_nJson& hint)
-{
-	CustomLogger* c = CustomLogger::GetSingleton();
-	DataHandler*  d = DataHandler::GetSingleton();
-	std::string   currentPath(jsonPath);
+void SMFRenderer::RenderJsonValue( const std::string_view jsonPath, const std::string& key, ordered_nJson& value, ordered_nJson& hint ) {
+	CustomLogger* c{ CustomLogger::GetSingleton() };
+	DataHandler*  d{ DataHandler::GetSingleton() };
+	std::string   currentPath( jsonPath );
 	currentPath += key + ".";
-	ImGui::PushID(currentPath.c_str());  // Using jsonPath as unique ID for ImGui
+	ImGui::PushID( currentPath.c_str() );  // Using jsonPath as unique ID for ImGui
 
-	if (value.is_object()) {
-		if (ImGui::TreeNode((key + " { }").c_str())) {
-			RenderJsonObject(value);
+	if( value.is_object() ) {
+		// Render object
+		if( ImGui::TreeNode( (key + " { }").c_str() ) ) {
+			RenderJsonObject( currentPath, value, hint );
 			ImGui::TreePop();
 		}
-	} else if (value.is_array()) {
-		if (ImGui::TreeNode((key + " [ ]").c_str())) {
-			RenderJsonArray(value);
+	} else if( value.is_array() ) {
+		// Render array
+		if( ImGui::TreeNode( (key + " [ ]").c_str() ) ) {
+			RenderJsonArray( currentPath, key, value, hint );
 			ImGui::TreePop();
 		}
-	} else if (value.is_string()) {
+	} else if( value.is_string() ) {
 		// Render string input, combo boxes, etc.
-		if (key == "LogLevel") {
-			std::string           originalStringValue = value;
-			static int            currentLogLevel = 2;
-			constexpr const char* LogLevels[7] = { "trace", "debug", "info", "warn", "err", "critical", "off" };
-			if (ImGui::Combo(key.c_str(), &currentLogLevel, LogLevels, ((int)(sizeof(LogLevels) / sizeof(*LogLevels))))) {
-				value = std::string(LogLevels[currentLogLevel]);
-				c->AddLog(std::format("{} Selected LogLevel of key '{}' in Path {} from '{}' to '{}'", d->_UserName, key, jsonPath, originalStringValue, LogLevels[currentLogLevel]));
-			}
-		} else if (key == "Sound Level") {
-			enum AmmoType
-			{
-				Arrow,
-				Bolt,
-				None
+		if( key == "LogLevel" ) {
+			std::string_view                     originalStringValue{ value };
+			int                                  currentLogLevel{ spdlog::level::from_str(value) };
+			constexpr std::array<const char*, 7> LogLevels{
+				"trace",
+				"debug",
+				"info",
+				"warning",
+				"error",
+				"critical",
+				"off"
 			};
-			AmmoType a = AmmoType::None;
-			if (currentPath.find(".Arrow.") != std::string::npos) {
-				a = AmmoType::Arrow;
-			} else if (currentPath.find(".Bolt.") != std::string::npos) {
-				a = AmmoType::Bolt;
-			}
-			static int            CurrentSoundLevel[2] = { 2, 2 };
-			constexpr const char* SoundLevel[5] = { "kLoud", "kNormal", "kSilent", "kVeryLoud", "kQuiet" };
-			switch (a) {
-			case AmmoType::Arrow:
-			case AmmoType::Bolt:
-				if (ImGui::Combo(key.c_str(), &CurrentSoundLevel[a], SoundLevel, ((int)(sizeof(SoundLevel) / sizeof(*SoundLevel))))) {
-					std::string originalStringValue = value;
-					value = std::string(SoundLevel[CurrentSoundLevel[a]]);
-					c->AddLog(std::format("{} Selected SoundLevel of key '{}' in Path {} from '{}' to '{}'", d->_UserName, key, jsonPath, originalStringValue, SoundLevel[CurrentSoundLevel[a]]));
+
+			if (ImGui::BeginCombo(key.c_str(), LogLevels[currentLogLevel])) {
+				for (int i = 0; i < LogLevels.size(); i++) {
+					const bool isSelected = (currentLogLevel == i);
+					if (ImGui::Selectable(LogLevels[i], isSelected)) {
+						currentLogLevel = i;
+						value = std::string(LogLevels[currentLogLevel]);
+						c->AddLog(std::format(
+							"{} Selected LogLevel of key '{}' in Path {} from '{}' to '{}'",
+							d->GetUsername(), key, jsonPath, originalStringValue, LogLevels[currentLogLevel]));
+					}
+					if (isSelected) {
+						ImGui::SetItemDefaultFocus();
+					}
 				}
-				break;
-			default:
-				break;
+				ImGui::EndCombo();
 			}
 		} else {
 			char   buffer[256];
-			size_t size = sizeof(buffer);
-			strncpy(buffer, value.get<std::string>().c_str(), size);
-			buffer[size - 1] = 0;
+			constexpr auto size{ sizeof(buffer) };
+			strcpy_s(buffer, size, value.get<std::string>().c_str());
 			if (ImGui::InputText(key.c_str(), buffer, size, ImGuiInputTextFlags_EnterReturnsTrue)) {
-				std::string originalStringValue = value;
-				value = std::string(buffer);
-				c->AddLog(std::format("{} Changed Value of key '{}' in Path {} from '{}' to '{}'", d->_UserName, key, jsonPath, originalStringValue, buffer));
+				std::string_view originalStringValue( value );
+				value = std::string( buffer );
+				c->AddLog( std::format( "{} Changed Value of key '{}' in Path {} from '{}' to '{}'", d->GetUsername(), key, jsonPath, originalStringValue, buffer ) );
 			}
-			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Press Enter to save your input.\nMaximum allowed characters: %zu", size - 1sz);
+			if( ImGui::IsItemHovered() ) {
+				ImGui::SetTooltip( "Press Enter to save your input.\nMaximum allowed characters: %zu", size - 1sz );
 			}
 		}
-	} else if (value.is_boolean()) {
+	} else if( value.is_boolean() ) {
 		// Render checkbox for boolean
-		bool boolValue = value;
-		if (ImGui::Checkbox(key.c_str(), &boolValue)) {
-			bool originalBoolValue = value;
+		bool boolValue{ value };
+		if( ImGui::Checkbox( key.c_str(), &boolValue ) ) {
+			bool originalBoolValue{ value };
 			value = boolValue;
-			c->AddLog(std::format("{} Changed Value of Key '{}' in Path {} from {} to {}", d->_UserName, key, jsonPath, originalBoolValue, boolValue));
+			c->AddLog( std::format( "{} Changed Value of Key '{}' in Path {} from {} to {}", d->GetUsername(), key, jsonPath, originalBoolValue, boolValue ) );
 		}
-	} else if (value.is_number_integer()) {
-		int intValue = value.get<int>();
-		if (ImGui::InputInt(key.c_str(), &intValue, ImGuiInputTextFlags_EnterReturnsTrue)) {
-			int originalIntValue = value;
+	} else if( value.is_number_integer() ) {
+		// Render input for integer
+		int intValue{ value.get<int>() };
+		if( ImGui::InputInt( key.c_str(), &intValue, ImGuiInputTextFlags_EnterReturnsTrue ) ) {
+			int originalIntValue{ value };
 			value = intValue;
-			c->AddLog(std::format("{} Changed Value of Key '{}' in Path from '{}' to '{}'", d->_UserName, key, jsonPath, originalIntValue, intValue));
+			c->AddLog( std::format( "{} Changed Value of Key '{}' in Path from '{}' to '{}'", d->GetUsername(), key, jsonPath, originalIntValue, intValue ) );
 		}
-	} else if (value.is_number_float()) {
-		float floatValue = value.get<float>();
-		if (ImGui::InputFloat(key.c_str(), &floatValue, ImGuiInputTextFlags_EnterReturnsTrue)) {
-			float originalFloatValue = value;
+	} else if( value.is_number_float() ) {
+		// Render input for float
+		float floatValue{ value.get<float>() };
+		if( ImGui::InputFloat( key.c_str(), &floatValue, ImGuiInputTextFlags_EnterReturnsTrue ) ) {
+			float originalFloatValue{ value };
 			value = floatValue;
-			c->AddLog(std::format("{} Changed Value of Key '{}' in Path from '{}' to '{}'", d->_UserName, key, jsonPath, originalFloatValue, floatValue));
+			c->AddLog( std::format( "{} Changed Value of Key '{}' in Path from '{}' to '{}'", d->GetUsername(), key, jsonPath, originalFloatValue, floatValue ) );
 		}
 	}
+
+	RenderHint( hint );
 	ImGui::PopID();
 }
 
-void SMFRenderer::RenderJsonObject(const std::string_view jsonPath, ordered_nJson& j, ordered_nJson& hint)
+void SMFRenderer::RenderJsonObject( const std::string_view jsonPath, ordered_nJson& j, ordered_nJson& hint ) {
+	for( auto& [key, value] : j.items() ) {
+		std::string currentPath( jsonPath );
+		currentPath += key + ".";
+		RenderJsonValue( currentPath, key, value, hint[key] );
+	}
+}
+
+void SMFRenderer::RenderJsonObject(const std::string_view jsonPath, std::shared_ptr<ordered_nJson> j, ordered_nJson& hint)
 {
-	for (auto& [key, value] : j.items()) {
+	for (auto& [key, value] : j->items()) {
 		std::string currentPath(jsonPath);
 		currentPath += key + ".";
 		RenderJsonValue(currentPath, key, value, hint[key]);
 	}
 }
 
-void SMFRenderer::RenderHint(ordered_nJson& hint)
-{
+void SMFRenderer::RenderHint( ordered_nJson& hint ) {
 	std::string clue = hint.is_string() ? hint.get<std::string>() : "";
-	if (!clue.empty()) {
+	if( !clue.empty() ) {
 		ImGui::SameLine();
-		if (ImGui::Button(UI::question.c_str())) {}
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip(clue.c_str());
+		if( ImGui::Button( UI::question.c_str() ) ) { }
+		if( ImGui::IsItemHovered() ) {
+			ImGui::SetTooltip( clue.c_str() );
 		}
 	}
 }
 
-SMFRenderer::FileCreationType SMFRenderer::CreateNewJsonFile(const std::string_view filename, const ordered_nJson& jsonObject)
-{
-	if (!fs::exists(filename)) {
-		std::ofstream file(filename.data());
+SMFRenderer::FileCreationType SMFRenderer::CreateNewJsonFile( const std::string_view filename, const ordered_nJson& jsonObject ) {
+	if( !fs::exists( filename ) ) {
+		std::ofstream file( filename.data() );
 
-		if (file.is_open()) {
+		if( file.is_open() ) {
 			file << jsonObject.dump();  // no need to Dump JSON with indentation of 4 spaces because user will(should) not manually edit json
-			file.close();
 			return FileCreationType::OK;
 		} else {
-			logger::error("Unable to open file for writing: {}", filename);
+			logger::error( "Unable to open file for writing: {}", filename );
 			return FileCreationType::Error;
 		}
 	} else {
-		logger::error("Don't try to create Duplicates of : {}", filename);
+		logger::error( "Don't try to create Duplicates of : {}", filename );
 		return FileCreationType::Duplicate;
 	}
 }
 
-SMFRenderer::FileCreationType SMFRenderer::CreateNewJsonFile(const std::string_view filename, std::shared_ptr<ordered_nJson> jsonObject)
-{
-	if (!fs::exists(filename)) {
-		std::ofstream file(filename.data());
+SMFRenderer::FileCreationType SMFRenderer::CreateNewJsonFile( const std::string_view filename, std::shared_ptr<ordered_nJson>& jsonObject ) {
+	if( !fs::exists( filename ) ) {
+		std::ofstream file( filename.data() );
 
-		if (file.is_open()) {
+		if( file.is_open() ) {
 			file << jsonObject->dump();  // no need to Dump JSON with indentation of 4 spaces because user will(should) not manually edit json
-			file.close();
 			return FileCreationType::OK;
 		} else {
-			logger::error("Unable to open file for writing: {}", filename);
+			logger::error( "Unable to open file for writing: {}", filename );
 			return FileCreationType::Error;
 		}
 	} else {
-		logger::error("Don't try to create Duplicates of : {}", filename);
+		logger::error( "Don't try to create Duplicates of : {}", filename );
 		return FileCreationType::Duplicate;
 	}
 }
 
-bool SMFRenderer::SaveJsonToFile(const std::string_view filename, const ordered_nJson& jsonObject)
-{
-	std::ofstream file(filename.data());
+bool SMFRenderer::SaveJsonToFile( const std::string_view filename, const ordered_nJson& jsonObject ) {
+	std::ofstream file( filename.data() );
 
-	if (file.is_open()) {
+	if( file.is_open() ) {
 		file << jsonObject.dump();  // no need to Dump JSON with indentation of 4 spaces because user will(should) not manually edit json
-		file.close();
 		return true;
 	} else {
-		logger::error("Unable to open file for writing: {}", filename);
+		logger::error( "Unable to open file for writing: {}", filename );
 	}
 	return false;
 }
 
-bool SMFRenderer::SaveJsonToFile(const std::string_view filename, std::shared_ptr<ordered_nJson> jsonObject)
-{
-	std::ofstream file(filename.data());
+bool SMFRenderer::SaveJsonToFile( const std::string_view filename, std::shared_ptr<ordered_nJson>& jsonObject ) {
+	std::ofstream file( filename.data() );
 
-	if (file.is_open()) {
+	if( file.is_open() ) {
 		file << jsonObject->dump();  // no need to Dump JSON with indentation of 4 spaces because user will(should) not manually edit json
-		file.close();
 		return true;
 	} else {
-		logger::error("Unable to open file for writing: {}", filename);
+		logger::error( "Unable to open file for writing: {}", filename );
 	}
+	return false;
 }
 
-void SMFRenderer::RenderJsonArray(const std::string_view jsonPath, std::string_view key, ordered_nJson& j, ordered_nJson& hint)
+bool SMFRenderer::SaveJsonToFile(std::map<std::string, std::shared_ptr<ordered_nJson>>::iterator p)
 {
-	CustomLogger*                c = CustomLogger::GetSingleton();
-	DataHandler*                 d = DataHandler::GetSingleton();
-	std::unique_lock<std::mutex> dlock(d->_lock);
-	std::string                  currentPath(jsonPath);
+	std::ofstream file(p->first.data());
+
+	if (file.is_open()) {
+		file << p->second->dump();  // no need to Dump JSON with indentation of 4 spaces because user will(should) not manually edit json
+		return true;
+	} else {
+		logger::error("Unable to open file for writing: {}", p->first);
+	}
+	return false;
+}
+
+void SMFRenderer::RenderJsonArray( const std::string_view jsonPath, std::string_view key, ordered_nJson& j, ordered_nJson& hint ) {
+	CustomLogger* c = CustomLogger::GetSingleton();
+	DataHandler* d = DataHandler::GetSingleton();
+	std::string                  currentPath( jsonPath );
+	currentPath += key;
+	currentPath += ".";
+	ImGui::PushID( currentPath.c_str() );
+	for( size_t i = 0; i < j.size(); ++i ) {
+		std::string Path( currentPath );
+		Path += "[" + std::to_string( i ) + "].";
+
+		ImGui::PushID( Path.c_str() );
+		if( hint.is_array() ) {
+			RenderJsonValue( Path, "[" + std::to_string( i ) + "]", j[i], hint[i] );
+		} else {
+			RenderJsonValue( Path, "[" + std::to_string( i ) + "]", j[i], hint );
+		}
+		ImGui::SameLine();
+		if( ImGui::Button( UI::x.c_str() ) ) {
+			if( jsonPath.find( "Mod File(s) to Exclude" ) != std::string::npos ) {
+				d->GetModifiableTESFileArray().erase( j[i] );
+			}
+			if( jsonPath.find( "AMMO FormID to Exclude" ) != std::string::npos ) {
+				d->GetModifiableFormIDArray().erase( j[i] );
+			}
+			c->AddLog( std::format( "{} Decided to Remove {} Value in Key '{}' in Path {}", d->GetUsername(), j[i].dump(), key, jsonPath ) );
+			j.erase( j.begin() + i );
+			ImGui::PopID();
+			ImGui::PopID();
+			return;  // exit to avoid further processing as the array is modified
+		}
+		if( ImGui::IsItemHovered() ) {
+			ImGui::SetTooltip( std::string( "Removes line [" + std::to_string( i ) + "]" ).c_str() );
+		}
+		if( i > 0sz ) {
+			ImGui::SameLine();
+			if( ImGui::ArrowButton( "##up", ImGuiDir_Up ) ) {  //Move up
+				c->AddLog( std::format( "{} Decided to move {} Value in Key '{}' in Path {} One Step Above", d->GetUsername(), j[i].dump(), key, jsonPath ) );
+				std::swap( j[i], j[i - 1sz] );
+				ImGui::PopID();
+				ImGui::PopID();
+				return;
+			}
+			if( ImGui::IsItemHovered() ) {
+				ImGui::SetTooltip( "Click Me to Move me Up" );
+			}
+		}
+		if( i < (j.size() - 1sz) ) {
+			ImGui::SameLine();
+			if( ImGui::ArrowButton( "##down", ImGuiDir_Down ) ) {  //Move Down
+				c->AddLog( std::format( "{} Decided to move {} Value from Key '{}' in Path {} One Step Below", d->GetUsername(), j[i].dump(), key, jsonPath ) );
+				std::swap( j[i], j[i + 1sz] );
+				ImGui::PopID();
+				ImGui::PopID();
+				return;
+			}
+			if( ImGui::IsItemHovered() ) {
+				ImGui::SetTooltip( "Click Me to Move me Down" );
+			}
+		}
+		ImGui::PopID();
+	}
+
+	if( ImGui::Button( UI::plus.c_str() ) ) {
+		// add a default value to the array
+		j.push_back( "" );
+		c->AddLog( std::format( "{} Added Value \"\" into Last position of Key '{}' in Path {}", d->GetUsername(), key, jsonPath ) );
+		ImGui::PopID();
+		ImGui::PopID();
+		return;
+	}
+	if( ImGui::IsItemHovered() ) {
+		ImGui::SetTooltip( "Adds a Empty Line" );
+	}
+	ImGui::PopID();
+}
+
+void SMFRenderer::RenderJsonArray(const std::string_view jsonPath, std::string_view key, std::shared_ptr<ordered_nJson> j, ordered_nJson& hint)
+{
+	CustomLogger* c = CustomLogger::GetSingleton();
+	DataHandler*  d = DataHandler::GetSingleton();
+	std::string   currentPath(jsonPath);
 	currentPath += key;
 	currentPath += ".";
 	ImGui::PushID(currentPath.c_str());
-	for (size_t i = 0; i < j.size(); ++i) {
-		ImGui::PushID(static_cast<int>(i));
-		RenderJsonValue("[" + std::to_string(i) + "]", j[i]);
+	for (size_t i = 0; i < j->size(); ++i) {
+		std::string Path(currentPath);
+		Path += "[" + std::to_string(i) + "].";
+
+		ImGui::PushID(Path.c_str());
+		if (hint.is_array()) {
+			RenderJsonValue(Path, "[" + std::to_string(i) + "]", j->at(i), hint[i]);
+		} else {
+			RenderJsonValue(Path, "[" + std::to_string(i) + "]", j->at(i), hint);
+		}
 		ImGui::SameLine();
 		if (ImGui::Button(UI::x.c_str())) {
 			if (jsonPath.find("Mod File(s) to Exclude") != std::string::npos) {
-				d->_TESFileArray.erase(j[i]);
+				d->GetModifiableTESFileArray().erase(j->at(i));
 			}
 			if (jsonPath.find("AMMO FormID to Exclude") != std::string::npos) {
-				d->_FormIDArray.erase(j[i]);
+				d->GetModifiableFormIDArray().erase(j->at(i));
 			}
-			c->AddLog(std::format("{} Decided to Remove {} Value in Key '{}' in Path {}", d->_UserName, j[i].dump(), key, jsonPath));
-			j.erase(j.begin() + i);
+			c->AddLog(std::format("{} Decided to Remove {} Value in Key '{}' in Path {}", d->GetUsername(), j->at(i).dump(), key, jsonPath));
+			j->erase(j->begin() + i);
 			ImGui::PopID();
 			ImGui::PopID();
-			dlock.unlock();
 			return;  // exit to avoid further processing as the array is modified
 		}
 		if (ImGui::IsItemHovered()) {
@@ -586,25 +789,23 @@ void SMFRenderer::RenderJsonArray(const std::string_view jsonPath, std::string_v
 		if (i > 0sz) {
 			ImGui::SameLine();
 			if (ImGui::ArrowButton("##up", ImGuiDir_Up)) {  //Move up
-				c->AddLog(std::format("{} Decided to move {} Value in Key '{}' in Path {} One Step Above", d->_UserName, j[i].dump(), key, jsonPath));
-				std::swap(j[i], j[i - 1sz]);
+				c->AddLog(std::format("{} Decided to move {} Value in Key '{}' in Path {} One Step Above", d->GetUsername(), j->at(i).dump(), key, jsonPath));
+				std::swap(j->at(i), j->at(i - 1sz));
 				ImGui::PopID();
 				ImGui::PopID();
-				dlock.unlock();
 				return;
 			}
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("Click Me to Move me Up");
 			}
 		}
-		if (i < (j.size() - 1sz)) {
+		if (i < (j->size() - 1sz)) {
 			ImGui::SameLine();
 			if (ImGui::ArrowButton("##down", ImGuiDir_Down)) {  //Move Down
-				c->AddLog(std::format("{} Decided to move {} Value from Key '{}' in Path {} One Step Below", d->_UserName, j[i].dump(), key, jsonPath));
-				std::swap(j[i], j[i + 1sz]);
+				c->AddLog(std::format("{} Decided to move {} Value from Key '{}' in Path {} One Step Below", d->GetUsername(), j->at(i).dump(), key, jsonPath));
+				std::swap(j->at(i), j->at(i - 1sz));
 				ImGui::PopID();
 				ImGui::PopID();
-				dlock.unlock();
 				return;
 			}
 			if (ImGui::IsItemHovered()) {
@@ -616,11 +817,10 @@ void SMFRenderer::RenderJsonArray(const std::string_view jsonPath, std::string_v
 
 	if (ImGui::Button(UI::plus.c_str())) {
 		// add a default value to the array
-		j.push_back("");
-		c->AddLog(std::format("{} Added Value \"\" into Last position of Key '{}' in Path {}", d->_UserName, key, jsonPath));
+		j->push_back("");
+		c->AddLog(std::format("{} Added Value \"\" into Last position of Key '{}' in Path {}", d->GetUsername(), key, jsonPath));
 		ImGui::PopID();
 		ImGui::PopID();
-		dlock.unlock();
 		return;
 	}
 	if (ImGui::IsItemHovered()) {
@@ -629,77 +829,68 @@ void SMFRenderer::RenderJsonArray(const std::string_view jsonPath, std::string_v
 	ImGui::PopID();
 }
 
-inline CustomLogger* CustomLogger::GetSingleton()
-{
+inline CustomLogger* CustomLogger::GetSingleton() {
 	static CustomLogger Singleton;
-	return std::addressof(Singleton);
+	return std::addressof( Singleton );
 }
 
-void CustomLogger::AddLog(const std::string& message)
-{
-	std::chrono::time_point now = std::chrono::system_clock::now();
-	std::time_t             now_time = std::chrono::system_clock::to_time_t(now);
-	std::tm                 local_tm = *std::localtime(&now_time);
+void CustomLogger::AddLog( const std::string& message ) {
+	std::time_t             now_time = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() );
 	std::ostringstream      oss;
 
-	oss << "[" << std::put_time(&local_tm, "%Y-%m-%d %H:%M:%S") << "] " << message;
-	_logs.push_back(oss.str());
+	oss << "[" << std::put_time( std::localtime( &now_time ), "%Y-%m-%d %H:%M:%S" ) << "] " << message;
+	_logs.push_back( oss.str() );
 
 	size_t oldSize = _lineOffsets.empty() ? 0 : _lineOffsets.back();
-	for (char c : oss.str()) {
+	for( char c : oss.str() ) {
 		oldSize++;
-		if (c == '\n') {
-			_lineOffsets.push_back(oldSize);
+		if( c == '\n' ) {
+			_lineOffsets.push_back( oldSize );
 		}
 	}
 	_scrollToBottom = true;
 }
 
-inline void CustomLogger::ClearLogs()
-{
-	std::lock_guard<std::mutex> lock(_lock);
+inline void CustomLogger::ClearLogs() {
+	std::lock_guard<std::mutex> lock( _lock );
 	_logs.clear();
 	_lineOffsets.clear();
 	_scrollToBottom = false;
 }
 
-inline const std::vector<std::string>& CustomLogger::GetLogs() const
-{
-	std::lock_guard<std::mutex> lock(_lock);
+inline const std::vector<std::string>& CustomLogger::GetLogs() const {
+	std::lock_guard<std::mutex> lock( _lock );
 	return _logs;
 }
 
-inline const std::string CustomLogger::GetLatestLog() const
-{
-	std::lock_guard<std::mutex> lock(_lock);
+inline const std::string CustomLogger::GetLatestLog() const {
+	std::lock_guard<std::mutex> lock( _lock );
 
-	constexpr const char* emptyLog = "Default(No Logs available)";
-	if (_logs.empty()) {
-		return emptyLog;
+	if( _logs.empty() ) {
+		return "Default(No Logs available)";
 	}
 
-	std::string formattedLog = std::format("[{}] {}", _logs.size(), _logs.back());
+	std::string formattedLog = std::format( "[{}] {}", _logs.size(), _logs.back() );
 	return formattedLog;
 }
 
-bool CustomLogger::ShouldScrollToBottom() const
-{
-	std::lock_guard<std::mutex> lock(_lock);
+bool CustomLogger::ShouldScrollToBottom() const {
+	std::lock_guard<std::mutex> lock( _lock );
 	return _scrollToBottom;
 }
 
-void jsoning::RenderJsonEditor(nJson& jsonObject)
-{
-	RenderJsonObject(jsonObject);
+void CustomLogger::ResetScrollToBottom() {
+	std::lock_guard<std::mutex> lock( _lock );
+	_scrollToBottom = false;
 }
 
-void jsoning::SaveJsonToFile(const std::string& filename, const nJson& jsonObject)
-{
-	std::ofstream file(filename);
-	if (file.is_open()) {
-		file << jsonObject.dump(4);  // Dump JSON with indentation of 4 spaces
-		file.close();
-	} else {
-		logger::error("Unable to open file for writing: {}", filename);
+std::vector<std::string> CustomLogger::GetFilteredLogs( const std::string& filter ) const {
+	std::lock_guard<std::mutex> lock( _lock );
+	std::vector<std::string>    filteredLogs;
+	for( const auto& log : _logs ) {
+		if( log.find( filter ) != std::string::npos ) {
+			filteredLogs.push_back( log );
+		}
 	}
+	return filteredLogs;
 }

@@ -1,17 +1,36 @@
 #include "DataHandler.h"
 #include "Events.h"
+#include "SKSEMenuFramework.h"
+
+#include "UI.h"
 
 void SKSEEvent::InitializeMessaging()
 {
-	if (!SKSE::GetMessagingInterface()->RegisterListener(MessageListener))
+	if (!SKSE::GetMessagingInterface()->RegisterListener("SKSE", MessageListener))
 		util::report_and_fail("Unable to register message listener.");
 }
 
 void SKSEEvent::MessageListener(SKSE::MessagingInterface::Message* message)
 {
+	DataHandler* d{ DataHandler::GetSingleton() };
 	switch (message->type) {
-		case SKSE::MessagingInterface::kDataLoaded:
-		DataHandler::GetSingleton()->PatchAMMO();
+	case SKSE::MessagingInterface::kDataLoaded:
+		d->PatchAMMO();
+		break;
+	case SKSE::MessagingInterface::kPostLoad:
+		d->LoadMainJson();
+
+		logger::trace("Loaded Main Json");
+
+		d->ChangeLogLevel(d->GetUnmodifiableMainJsonData()->at("Logging").at("LogLevel").get<std::string>());
+
+		d->ProcessMainJson();
+
+		d->LogDataHandlerContents();
+		d->LoadExclusionJsonFiles();
+		if (SKSEMenuFramework::IsInstalled()) {
+			SMFRenderer::GetSingleton()->GetAllExclusionJsons();
+		}
 		break;
 	default:
 		break;

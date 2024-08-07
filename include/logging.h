@@ -1,6 +1,6 @@
 #pragma once
 
-namespace AP
+class Logging
 {
 public:
 	Logging();
@@ -19,6 +19,4 @@ private:
 	Logging&                                     operator=(const Logging&) = delete;
 	Logging&                                     operator=(Logging&&) = delete;
 	void                                         SetupLog(std::optional<fs::path> path, std::shared_ptr<spdlog::logger>& log, spdlog::level::level_enum SetLevel = spdlog::level::info, spdlog::level::level_enum FlushLevel = spdlog::level::info);
-	const char*                                  _Pattern{ "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v" };
-	std::shared_ptr<spdlog::sinks::msvc_sink_mt> _MSVCSink{ std::make_shared<spdlog::sinks::msvc_sink_mt>() };
 };

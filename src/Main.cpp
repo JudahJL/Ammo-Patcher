@@ -2,21 +2,20 @@
 
 SKSEPluginLoad( const SKSE::LoadInterface* a_skse ) {
 	/*while (!IsDebuggerPresent()) {
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::seconds(5));
 	}*/
 	std::chrono::steady_clock::time_point startSPL = std::chrono::high_resolution_clock::now();
 
 	Logging logger;
 
-	DataHandler* d = DataHandler::GetSingleton();
-	d->LoadMainJson();
-	d->ReloadLoggingIfNecessary(d->_JsonData["Logging"]["LogLevel"].get<std::string>());
-	d->ProcessMainJson();
-	d->LogDataHandlerContents();
-	d->LoadExclusionJsonFiles();
+	logger::trace("Logger was initialized");
+
 	SKSE::Init( a_skse );
 
+	logger::trace("SKSE::Init(const SKSE::LoadInterface* a_intfc) was Called");
+
 	SKSEEvent::InitializeMessaging();
+
 
 	SMFRenderer::Register();
 

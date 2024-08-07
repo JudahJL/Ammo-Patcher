@@ -14,191 +14,151 @@ DataHandler* DataHandler::GetSingleton() {
 
 void DataHandler::LoadMainJson()
 {
-	std::lock_guard<std::mutex> lock(_lock);
-	std::ifstream               jsonFile( std::format( "Data/SKSE/Plugins/{}.json", SKSE::PluginDeclaration::GetSingleton()->GetName() ) );
+	std::string   Selected;
+	std::ifstream m(std::format("Data/SKSE/Plugins/Ammo Patcher/{}_Default.json", SKSE::PluginDeclaration::GetSingleton()->GetName()));
+	ordered_nJson n;
 	try {
-		jsonFile >> _JsonData;  // used for parsing main json file
-	} catch( const ordered_nJson::exception& e ) {
-		_JsonData = {
-			{ "Logging", {
-                {"LogLevel", "info"}
-            }},
-			{ "User Details", {
-                {"Username", "User"}
-            }},
-			{ "AMMO", { 
-				{ "Infinite AMMO", { 
-					{ "Player", false },
-				    { "Teammate", false } 
-		        } },
-				{ "Arrow", { 
-					{ "Enable Arrow Patch", true },
-					{ "Change Gravity", { 
-						{ "Enable", true },
-						{ "Gravity", 0.0f } 
-		            } },
-					{ "Change Speed", { 
-						{ "Enable", true },
-				        { "Speed", 9000.0f } 
-		            } },
-					{ "Limit Speed", { 
-						{ "Enable", false },
-                        {"Min", 3000.0f},
-                        {"Max", 12000.0f}
-                    }},
-					{ "Randomize Speed", { 
-						{ "Enable", false },
-                        {"Min", 3000.0f},
-                        {"Max", 12000.0f}
-                    }},
-                    {"Limit Damage", { 
-						{ "Enable", false },
-                        {"Min", 10.0f},
-                        {"Max", 1000.0f}
-                    }},
-                    {"Sound", { 
-						{ "Change Sound Level", { 
-							{ "Enable", false },
-                            {"Sound Level", "kSilent"} 
-		                } }
-                    }}
-                }},
-				{ "Bolt", { 
-					{ "Enable Bolt Patch", true },
-						{ "Change Gravity", { 
-							{ "Enable", true },
-                            {"Gravity", 0.0f} 
-		                } },
-						{ "Change Speed", { 
-							{ "Enable", true },
-                            {"Speed", 10800.0f} 
-		                } },
-						{ "Limit Speed", { 
-							{ "Enable", false },
-						    { "Min", 4000.0f },
-                            {"Max", 12000.0f}
-                        }},
-						{ "Randomize Speed", { 
-							{ "Enable", false },
-                            {"Min", 3000.0f},
-							{ "Max", 12000.0f } 
-		                } },
-						{ "Limit Damage", { 
-							{ "Enable", false },
-							{ "Min", 10.0f },
-							{ "Max", 1000.0f } 
-		                } },
-                        {"Sound", { 
-							{ "Change Sound Level", { 
-								{ "Enable", false },
-								{ "Sound Level", "kSilent" }
-                            }} 
-		                } }
-                }}
-            }}
-		};
-		logger::error( "{}", e.what() );
-		InlineUtils::customMessageBox( std::format( "{}. Are you sure you want to continue? if you continue, The error will be logged and a default json will be used instead.", e.what() ) );
+		if (m.is_open()) {
+			m >> n;
+		}
+		Selected = n.at("Load");
+	} catch (const fs::filesystem_error& e) {
+		InlineUtils::customMessageBox(e.what() + "\nDo You Want to Continue?(Please Don't since this opens the Ammo_Patcher_Default.json file)"s);
+	} catch (const ordered_nJson::exception& e) {
+		InlineUtils::customMessageBox(e.what() + "\nDo You Want to Continue?(Please Don't since this loads a Preset)"s);
+	}
+	auto constexpr path{ "Data/SKSE/Plugins/Ammo Patcher/Presets/" };
+	if (fs::exists(path) && !fs::is_empty(path)) {
+		_HasFilesToMerge = true;
+		std::vector<std::thread> threads;
+		std::stringstream        errorStream;
+		std::mutex               errorStreamMutex;
+		for (const auto& entry : fs::directory_iterator(path)) {
+			fs::path entry_path{ entry.path() };
+
+			if (!InlineUtils::resolve_symlink(entry_path, 10)) {
+				auto s{ fs::absolute(entry_path).generic_string() };
+				logger::error("Skipping entry due to symlink loop: {}", s);
+				continue;
+			}
+
+			if (fs::is_regular_file(entry_path) && entry_path.extension() == ".json") {
+				std::string EntryPathStr(fs::absolute(entry_path).generic_string());
+				if (entry_path.filename().string() == Selected) {
+					SetSelectedPreset(EntryPathStr);
+				}
+				threads.emplace_back([EntryPathStr ,entry_path, this, &errorStreamMutex, &errorStream] {
+
+				std::ifstream jFile(entry_path);
+
+				if (!jFile.is_open()) {
+					logger::error("Failed to open file: {}", EntryPathStr);
+					return;
+				}
+				try {
+					std::lock_guard<std::mutex> lock(_lock);
+					auto                        Data = std::make_shared<ordered_nJson>(ordered_nJson::parse(jFile));
+					_MainJsonDataMap.insert({ EntryPathStr, Data});
+				} catch (const ordered_nJson::exception& e) {
+					logger::error("{} parsing error : {}", EntryPathStr, e.what());
+					{
+						std::lock_guard<std::mutex> l(errorStreamMutex);
+						errorStream << EntryPathStr << ": " << e.what() << '\n';
+					}
+					return;
+				}
+				logger::debug("Loaded JSON from file: {}", EntryPathStr);
+				});
+			}
+		}
+
+		for (auto& thread : threads)
+			thread.join();
+
+		if (_SelectedPreset == Selected) {
+			InlineUtils::customMessageBox(std::format("Didn't Find a File called {}. Dont Continue.", Selected));
+		}
+		std::string errors = errorStream.str();
+		if (!errors.empty()) {
+			InlineUtils::customMessageBox(errors + "Do You Want to Continue?(Please Dont)");
+		}
+	} else {
+		util::report_and_fail("Didn't Find any json preset's in the Directory: "s + path + "\n");
 	}
 }
 
 void DataHandler::LoadExclusionJsonFiles()
 {
-	std::lock_guard<std::mutex> lock(_lock);
-	_FormIDArray.clear();
+	{
+		std::lock_guard<std::mutex> lock(_lock);
+		_FormIDArray.clear();
 
-	_TESFileArray.clear();
+		_TESFileArray.clear();
+	}
 
-	if (fs::exists(_FolderPath) && !fs::is_empty(_FolderPath)) {
+	constexpr const char* FolderPath{ "Data/SKSE/Plugins/Ammo Patcher/Exclusions/" };
+	if (fs::exists(FolderPath) && !fs::is_empty(FolderPath)) {
 		_HasFilesToMerge = true;
-		for (const auto& entry : fs::directory_iterator(_FolderPath)) {
-			fs::path entry_path = entry.path();
+		std::vector<std::thread> threads;
+		std::stringstream        errorStream;
+		std::mutex               errorStreamMutex;
+		for (const auto& entry : fs::directory_iterator(FolderPath)) {
+			fs::path entry_path{ entry.path() };
 
 			if (!InlineUtils::resolve_symlink(entry_path, 10)) {
-				logger::error("Skipping entry due to symlink loop: {}", fs::absolute(entry_path).generic_string());
+				auto s{ fs::absolute(entry_path).generic_string() };
+				logger::error("Skipping entry due to symlink loop: {}", s);
 				continue;
 			}
 
 			if (fs::is_regular_file(entry_path) && entry_path.extension() == ".json") {
+				threads.emplace_back([entry_path, this, &errorStreamMutex, &errorStream] {
 				std::string EntryPathStr(fs::absolute(entry_path).generic_string());
 
 				std::ifstream jFile(entry_path);
 
 				if (!jFile.is_open()) {
 					logger::error("Failed to open file: {}", EntryPathStr);
-					continue;
+					return;
 				}
 				ordered_nJson MergeJsonData;
 				try {
 					jFile >> MergeJsonData;
 				} catch (const ordered_nJson::exception& e) {
 					logger::error("{} parsing error : {}", EntryPathStr, e.what());
-
-					InlineUtils::customMessageBox(std::format("{}. Are you sure you want to continue? if you continue, {} will be ignored and the error will be logged.", e.what(), EntryPathStr));
+					{
+						std::lock_guard<std::mutex> l(errorStreamMutex);
+						errorStream << EntryPathStr << ": " << e.what() << '\n';
+					}
+					return;
 				}
 				logger::debug("Loaded JSON from file: {}", EntryPathStr);
 
 				if (MergeJsonData["AMMO FormID to Exclude"].is_array() && MergeJsonData["Mod File(s) to Exclude"].is_array()) {
+					std::lock_guard<std::mutex> lock(_lock);
 					for (const std::string& a : MergeJsonData["AMMO FormID to Exclude"]) _FormIDArray.insert(a);
 					for (const std::string& a : MergeJsonData["Mod File(s) to Exclude"]) _TESFileArray.insert(a);
-				}
+				} });
 			}
+		}
+		for (auto& thread : threads)
+			thread.join();
+		std::string errors = errorStream.str();
+		if (!errors.empty()) {
+			InlineUtils::customMessageBox(errors + "Do You Want to Continue?(Please Dont)");
 		}
 	} else
 		logger::info("************No Exclusion will be Done************");
 }
 
-void DataHandler::ReloadLoggingIfNecessary(const std::string& LogLevelStr)
-{
-	std::lock_guard<std::mutex>                                      lock(_lock);
-	static const std::unordered_map<std::string_view, spdlog::level::level_enum> logLevelMap{
-		{ "trace"sv, spdlog::level::trace },
-		{ "debug"sv, spdlog::level::debug },
-		{ "info"sv, spdlog::level::info },
-		{ "warn"sv, spdlog::level::warn },
-		{ "err"sv, spdlog::level::err },
-		{ "critical"sv, spdlog::level::critical },
-		{ "off"sv, spdlog::level::off }
-	};
-	constexpr const char* Pattern{ "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v" };
-
-	auto it = logLevelMap.find(LogLevelStr);
-	if (it != logLevelMap.end()) {
-		spdlog::level::level_enum newLevel = it->second;
-
-		if (newLevel != spdlog::level::off) {
-			if (spdlog::default_logger()->sinks().empty()) {
-				Logging logger(newLevel);
-			} else {
-				spdlog::set_level(newLevel);
-				spdlog::flush_on(newLevel);
-				spdlog::set_pattern(Pattern);
-			}
-		} else {
-			spdlog::default_logger()->sinks().clear();
-			spdlog::set_pattern("");
-		}
-	} else {
-		logger::error("Invalid log level: {}. Defaulting to info.", LogLevelStr);
-		if (spdlog::default_logger()->sinks().empty()) {
-			Logging logger;
-		} else {
-			spdlog::set_level(spdlog::level::info);
-			spdlog::flush_on(spdlog::level::info);
-			spdlog::set_pattern(Pattern);
-		}
-	}
-}
-
 void DataHandler::ProcessMainJson()
 {
-	std::lock_guard<std::mutex> lock(_lock);
 	logger::info("*****************Processing Data*****************");
-	if (!_JsonData.empty() && !_JsonData.is_null()) {
+	if (!GetUnmodifiableMainJsonData()->empty() && !GetUnmodifiableMainJsonData()->is_null()) {
 		try { //                                                    0      1        2       3           4                  5         6             7                  8               9          10         11           12              13    14      15       16          17           18         19        20                  21                      22               23       24            25           26             27
 			constexpr const std::array<const char*,28> JsonKeys{ "AMMO", "Arrow", "Bolt", "Sound", "Change Sound Level", "Enable", "Sound Level", "Change Speed", "Change Gravity", "Gravity", "Speed", "Limit Speed", "Limit Damage", "Min", "Max", "kLoud", "kNormal", "kSilent", "kVeryLoud", "kQuiet", "Infinite AMMO", "Enable Arrow Patch", "Enable Bolt Patch", "Player", "Teammate", "User Details", "Username", "Randomize Speed" };
 
-			ordered_nJson& AMMO = _JsonData[JsonKeys.at(0)];
+			ordered_nJson& AMMO = GetUnmodifiableMainJsonData()->at(JsonKeys.at(0));
 			ordered_nJson& InfiniteAMMO = AMMO[JsonKeys.at(20)];
 
 			ordered_nJson& Arrow = AMMO[JsonKeys.at(1)];
@@ -271,7 +231,7 @@ void DataHandler::ProcessMainJson()
 			_ArrowGravity = AChangeGravity[JsonKeys.at(Gravity)].get<float>();
 			_BoltGravity = BChangeGravity[JsonKeys.at(Gravity)].get<float>();
 			
-			_UserName = _JsonData[JsonKeys.at(25)][JsonKeys.at(26)].get<std::string>();
+			_UserName = GetUnmodifiableMainJsonData()->at(JsonKeys.at(25)).at(JsonKeys.at(26)).get<std::string>();
 
 			if (_ArrowSpeedLimiterMin > _ArrowSpeedLimiterMax) {
 				constexpr const char* ErrorMessage{ "Error Detected in Json. Make Sure Arrow Speed Min is lesser than or Equal to Arrow Speed Max.\nThis is ignorable but not expected or proper(i.e., it will still work)" };
@@ -395,8 +355,8 @@ void DataHandler::PatchAMMO() {
 							}
 						}
 						if( shouldPatch ) {
-							for( const auto& ammoFormID : _FormIDArray ) {
-								if (auto form = InlineUtils::GetFormFromIdentifier(ammoFormID); form) {
+							for( const std::string& ammoFormID : _FormIDArray ) {
+								if (auto form = InlineUtils::GetFromIdentifier<RE::TESForm>(ammoFormID); form) {
 									if (ammo->GetFormID() == form->GetFormID()) {
 										shouldPatch = false;
 										logger::debug("{}", starString);
@@ -411,10 +371,23 @@ void DataHandler::PatchAMMO() {
 					}
 					if( shouldPatch ) {
 						if( !(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable) ) {
-							bool ammoPatched = false;
-							if( _ChangeArrowSoundLevel || _ArrowSpeedEnable || _ArrowGravityEnable || _LimitArrowDamage || _LimitArrowSpeed || _ChangeBoltSoundLevel || _BoltSpeedEnable || _BoltGravityEnable || _LimitBoltDamage || _LimitBoltSpeed )
+							bool ammoPatched{ false };
+							if (_ArrowPatch ||
+								_BoltPatch ||
+								_ArrowSpeedEnable ||
+								_BoltSpeedEnable ||
+								_ArrowGravityEnable ||
+								_BoltGravityEnable ||
+								_LimitArrowSpeed ||
+								_LimitBoltSpeed ||
+								_LimitArrowDamage ||
+								_LimitBoltDamage ||
+								_ChangeArrowSoundLevel ||
+								_ChangeBoltSoundLevel ||
+								_RandomizeArrowSpeed ||
+								_RandomizeBoltSpeed)
 								ammoPatched = true;
-							if( (_ArrowPatch || _BoltPatch) && ammoPatched ) {
+							if( ammoPatched ) {
 								logger::debug( "{}", starString );
 								logger::debug( "Before Patching : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}|File:{}", ammo->GetFullName(), ammo->GetRawFormID(),
 									ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity, ammo->GetFile()->GetFilename() );
@@ -480,7 +453,7 @@ void DataHandler::PatchAMMO() {
 								}
 							}
 
-							if( (_ArrowPatch || _BoltPatch) && ammoPatched ) {
+							if( ammoPatched ) {
 								logger::debug( "After Patching : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}|File:{}", ammo->GetFullName(), ammo->GetRawFormID(),
 									ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity, ammo->GetFile()->GetFilename() );
 								logger::debug( "{}", starString );
@@ -512,59 +485,60 @@ void DataHandler::PatchAMMO() {
 
 void DataHandler::LogDataHandlerContents()
 {
-	constexpr const char* data{ "*************************************************" };
+	constexpr const char* starCharPtr{ "*************************************************" };
 
-	logger::info("{}", data);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
+	logger::info("LogLevel: {}", spdlog::level::to_string_view(spdlog::get_level()));
+	logger::info("{}", starCharPtr);
 	logger::info("Patch Arrows : {}", _ArrowPatch);
 	logger::info("Patch Bolts : {}", _BoltPatch);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Infinite Player AMMO : {}", _InfinitePlayerAmmo);
 	logger::info("Infinite Teammate AMMO : {}", _InfiniteTeammateAmmo);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Set Arrow Gravity : {}", _ArrowGravityEnable);
 	logger::info("Arrow Gravity : {}", _ArrowGravity);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Set Bolt Gravity : {}", _BoltGravityEnable);
 	logger::info("Bolt Gravity : {}", _BoltGravity);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Set Arrow Speed : {}", _ArrowSpeedEnable);
 	logger::info("Arrow Speed : {}", _ArrowSpeed);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Set Bolt Speed : {}", _BoltSpeedEnable);
 	logger::info("Bolt Speed : {}", _BoltSpeed);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Set Arrow Speed Limit : {}", _LimitArrowSpeed);
 	logger::info("Arrow Minimum Speed Limit : {}", _ArrowSpeedLimiterMin);
 	logger::info("Arrow Maximum Speed Limit : {}", _ArrowSpeedLimiterMax);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Limit Bolt Speed : {}", _LimitBoltSpeed);
 	logger::info("Bolt Minimum Speed Limit : {}", _BoltSpeedLimiterMin);
 	logger::info("Bolt Maximum Speed Limit : {}", _BoltSpeedLimiterMax);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Change Arrow Sound Level : {}", _ChangeArrowSoundLevel);
 	logger::info("Arrow Sound Level : {}", _ArrowSoundLevelStr);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Change Bolt Sound Level : {}", _ChangeBoltSoundLevel);
 	logger::info("Bolt Sound Level : {}", _BoltSoundLevelStr);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Randomize Arrow Speed: {}", _RandomizeArrowSpeed);
 	logger::info("Random Arrow Speed Min: {}", _ArrowSpeedRandomizerMin);
 	logger::info("Random Arrow Speed Max: {}", _ArrowSpeedRandomizerMax);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Randomize Bolt Speed: {}", _RandomizeBoltSpeed);
 	logger::info("Random Bolt Speed Min: {}", _BoltSpeedRandomizerMin);
 	logger::info("Random Bolt Speed Max: {}", _BoltSpeedRandomizerMax);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Limit Arrow Damage : {}", _LimitArrowDamage);
 	logger::info("Arrow Minimum Damage Limit : {}", _ArrowDamageLimiterMin);
 	logger::info("Arrow Maximum Damage Limit : {}", _ArrowDamageLimiterMax);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
 	logger::info("Limit Bolt Damage : {}", _LimitBoltDamage);
 	logger::info("Bolt Minimum Damage Limit : {}", _BoltDamageLimiterMin);
 	logger::info("Bolt Maximum Damage Limit : {}", _BoltDamageLimiterMax);
-	logger::info("{}", data);
-	logger::info("{}", data);
+	logger::info("{}", starCharPtr);
+	logger::info("{}", starCharPtr);
 }
 
 void DataHandler::RevertToDefault()
@@ -573,15 +547,15 @@ void DataHandler::RevertToDefault()
 	logger::info("Starting to Revert");
 	if (!_AmmoInfo.empty()) {
 		_DoneAmmoPatching = false;
-		constexpr const char* starString = "******************************************************************************************************************************";
+		constexpr const char* starCharPtr = "******************************************************************************************************************************";
 
 		for( size_t i = 0sz; i < _AmmoInfo.size(); i++ ) {
-			auto ammo = InlineUtils::GetFormFromIdentifier<RE::TESAmmo>(_AmmoInfo[i]["AmmoString"]);
+			auto ammo = InlineUtils::GetFromIdentifier<RE::TESAmmo>(_AmmoInfo[i]["AmmoString"]);
 			if (ammo) {
 				auto ammoProjectile = ammo->GetRuntimeData().data.projectile;
 				if (ammoProjectile && (!_AmmoInfo[i]["ProjFormID"].is_null())) {
 					if (ammo->GetRawFormID() == _AmmoInfo[i]["AmmoFormID"].get<RE::FormID>() && ammoProjectile->GetRawFormID() == _AmmoInfo[i]["ProjFormID"].get<RE::FormID>()) {
-						logger::debug("{}", starString);
+						logger::debug("{}", starCharPtr);
 						logger::debug("Before Reverting : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}|File:{}", ammo->GetFullName(), ammo->GetRawFormID(),
 							ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity, ammo->GetFile()->GetFilename());
 						ammo->GetRuntimeData().data.damage = _AmmoInfo[i]["AmmoDamage"].get<float>();
@@ -589,7 +563,7 @@ void DataHandler::RevertToDefault()
 						ammoProjectile->data.gravity = _AmmoInfo[i]["ProjGravity"].get<float>();
 						logger::debug("After Reverting : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}|File:{}", ammo->GetFullName(), ammo->GetRawFormID(),
 							ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity, ammo->GetFile()->GetFilename());
-						logger::debug("{}", starString);
+						logger::debug("{}", starCharPtr);
 					}
 				}
 			}

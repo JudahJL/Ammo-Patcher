@@ -1,16 +1,18 @@
 #include "logging.h"
 
-void AP::InitializeLogging()
-{
+Logging::Logging() {
 	std::optional<fs::path> path = logger::log_directory();
 
-	if (!path) {
-		util::report_and_fail("Unable to lookup SKSE logs directory.");
+	if( !path ) {
+		util::report_and_fail( "Unable to lookup SKSE logs directory." );
 	}
 
-	*path /= std::format("{}.log", SKSE::PluginDeclaration::GetSingleton()->GetName());
-	
-	auto log = std::make_shared<spdlog::logger>(SKSE::PluginDeclaration::GetSingleton()->GetName().data());
+	*path /= std::format( "{}.log", SKSE::PluginDeclaration::GetSingleton()->GetName() );
+
+	std::shared_ptr<spdlog::logger> log = std::make_shared<spdlog::logger>( SKSE::PluginDeclaration::GetSingleton()->GetName().data() );
+
+	SetupLog( path, log );
+}
 
 Logging::Logging(spdlog::level::level_enum CommonLevel, std::string_view Name)
 {
@@ -69,6 +71,6 @@ void Logging::SetupLog(std::optional<fs::path> path, std::shared_ptr<spdlog::log
 
 	log->set_level(SetLevel);
 	log->flush_on(FlushLevel);
+	log->set_pattern( "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v" );
 	set_default_logger(std::move(log));
-	spdlog::set_pattern(pattern);
 }
