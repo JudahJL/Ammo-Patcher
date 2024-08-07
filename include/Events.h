@@ -15,6 +15,8 @@ private:
 	APEventProcessor& operator=(const APEventProcessor&) = delete;
 	APEventProcessor& operator=(APEventProcessor&&) = delete;
 
+	bool _EventDeployed{ false };
+
 	static APEventProcessor* GetSingleton();
 
 	RE::BSEventNotifyControl ProcessEvent(const RE::TESContainerChangedEvent* e, RE::BSTEventSource<RE::TESContainerChangedEvent>*) override;

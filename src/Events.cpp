@@ -1,18 +1,36 @@
-#include "Events.h"
 #include "DataHandler.h"
+#include "Events.h"
+#include "SKSEMenuFramework.h"
+
+#include "UI.h"
 
 void SKSEEvent::InitializeMessaging()
 {
-	if (!SKSE::GetMessagingInterface()->RegisterListener(MessageListener))
+	if (!SKSE::GetMessagingInterface()->RegisterListener("SKSE", MessageListener))
 		util::report_and_fail("Unable to register message listener.");
 }
 
 void SKSEEvent::MessageListener(SKSE::MessagingInterface::Message* message)
 {
-	//DataHandler* d = DataHandler::GetSingleton();
+	DataHandler* d{ DataHandler::GetSingleton() };
 	switch (message->type) {
 	case SKSE::MessagingInterface::kDataLoaded:
-		DataHandler::GetSingleton()->ammo_patch();
+		d->PatchAMMO();
+		break;
+	case SKSE::MessagingInterface::kPostLoad:
+		d->LoadMainJson();
+
+		logger::trace("Loaded Main Json");
+
+		d->ChangeLogLevel(d->GetUnmodifiableMainJsonData()->at("Logging").at("LogLevel").get<std::string>());
+
+		d->ProcessMainJson();
+
+		d->LogDataHandlerContents();
+		d->LoadExclusionJsonFiles();
+		if (SKSEMenuFramework::IsInstalled()) {
+			SMFRenderer::GetSingleton()->GetAllExclusionJsons();
+		}
 		break;
 	default:
 		break;
@@ -21,14 +39,18 @@ void SKSEEvent::MessageListener(SKSE::MessagingInterface::Message* message)
 
 void APEventProcessor::RegisterEvent()
 {
-	logger::debug("Registering APEventProcessor's RE::TESContainerChangedEvent");
-	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESContainerChangedEvent>(GetSingleton());
+	if (!GetSingleton()->_EventDeployed) {
+		logger::debug("Registering APEventProcessor's RE::TESContainerChangedEvent");
+		RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESContainerChangedEvent>(GetSingleton());
+	}
 }
 
 void APEventProcessor::UnregisterEvent()
 {
-	logger::debug("Unregistering APEventProcessor's RE::TESContainerChangedEvent");
-	RE::ScriptEventSourceHolder::GetSingleton()->RemoveEventSink<RE::TESContainerChangedEvent>(GetSingleton());
+	if(GetSingleton()->_EventDeployed){
+		logger::debug("Unregistering APEventProcessor's RE::TESContainerChangedEvent");
+		RE::ScriptEventSourceHolder::GetSingleton()->RemoveEventSink<RE::TESContainerChangedEvent>(GetSingleton());
+	}
 }
 
 APEventProcessor* APEventProcessor::GetSingleton()
@@ -40,7 +62,7 @@ APEventProcessor* APEventProcessor::GetSingleton()
 RE::BSEventNotifyControl APEventProcessor::ProcessEvent(const RE::TESContainerChangedEvent* e, RE::BSTEventSource<RE::TESContainerChangedEvent>*)
 {
 	// this event handles all object transfers between containers in the game
-	// this can be deived into multiple base events: OnItemRemoved and OnItemAdded
+	// this can be derived into multiple base events: OnItemRemoved and OnItemAdded
 	if (e && e->baseObj != 0 && e->itemCount != 0) {
 		RE::TESObjectREFR*  oldCont = RE::TESForm::LookupByID<RE::TESObjectREFR>(e->oldContainer);
 		RE::TESObjectREFR*  newCont = RE::TESForm::LookupByID<RE::TESObjectREFR>(e->newContainer);
