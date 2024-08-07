@@ -1,5 +1,5 @@
 #pragma once
-#include "SKSEMenuFramework/SKSEMenuFramework.h"
+#include "SKSEMenuFramework.h"
 
 class CustomLogger
 {
@@ -23,8 +23,8 @@ private:
 
 	std::vector<std::string> _logs;
 	std::vector<size_t>      _lineOffsets;
-	mutable std::mutex       _lock;
 	mutable bool             _scrollToBottom{ false };
+	mutable std::mutex       _lock;
 };
 
 namespace UI
@@ -37,7 +37,9 @@ namespace UI
 class SMFRenderer
 {
 public:
+	static SMFRenderer* GetSingleton();
 	static void __stdcall Register();
+	void GetAllExclusionJsons();
 
 private:
 	enum FileCreationType
@@ -55,24 +57,34 @@ private:
 
 	inline static MENU_WINDOW _LogWindow;
 
-	static SMFRenderer* GetSingleton();
 	static void __stdcall RenderMain();
 	static void __stdcall RenderExclusions();
 	static void __stdcall RenderLogWindow();
-	void                           GetAllExclusionJsons();
-	void                           RenderJsonEditor(const std::string_view Path, nJson& jsonObject, nJson& hint);
-	void                           RenderJsonValue(const std::string_view jsonPath, const std::string& key, nJson& value, nJson& hint);
-	void                           RenderJsonObject(const std::string_view jsonPath, nJson& j, nJson& hint);
-	void                           RenderJsonArray(const std::string_view jsonPath, std::string_view key, nJson& j, nJson& hint);
-	void                           RenderHint(nJson& hint);
-	[[nodiscard]] FileCreationType CreateNewJsonFile(const std::string_view filename, const nJson& jsonObject);
-	[[nodiscard]] FileCreationType CreateNewJsonFile(const std::string_view filename, std::shared_ptr<nJson> jsonObject);
-	[[nodiscard]] bool             SaveJsonToFile(const std::string_view filename, const nJson& jsonObject);
-	[[nodiscard]] bool             SaveJsonToFile(const std::string_view filename, std::shared_ptr<nJson> jsonObject);
+	static void __stdcall RenderDebug();
+	void                           RenderJsonEditor(const std::string_view Path, ordered_nJson& jsonObject, ordered_nJson& hint);
+	void                           RenderJsonEditor(const std::string_view Path, std::shared_ptr<ordered_nJson> jsonObject, ordered_nJson& hint);
+	void                           RenderJsonValue(const std::string_view jsonPath, const std::string& key, ordered_nJson& value, ordered_nJson& hint);
+	void                           RenderJsonObject(const std::string_view jsonPath, ordered_nJson& j, ordered_nJson& hint);
+	void                           RenderJsonObject(const std::string_view jsonPath, std::shared_ptr<ordered_nJson> j, ordered_nJson& hint);
+	void                           RenderJsonArray(const std::string_view jsonPath, std::string_view key, ordered_nJson& j, ordered_nJson& hint);
+	void                           RenderJsonArray(const std::string_view jsonPath, std::string_view key, std::shared_ptr<ordered_nJson> j, ordered_nJson& hint);
+	void                           RenderHint(ordered_nJson& hint);
+	[[nodiscard]] FileCreationType CreateNewJsonFile(const std::string_view filename, const ordered_nJson& jsonObject);
+	[[nodiscard]] FileCreationType CreateNewJsonFile(const std::string_view filename, std::shared_ptr<ordered_nJson>& jsonObject);
+	[[nodiscard]] bool             SaveJsonToFile(const std::string_view filename, const ordered_nJson& jsonObject);
+	[[nodiscard]] bool             SaveJsonToFile(const std::string_view filename, std::shared_ptr<ordered_nJson>& jsonObject);
+	[[nodiscard]] bool             SaveJsonToFile(std::map<std::string, std::shared_ptr<ordered_nJson>>::iterator p);
 
-	nJson                                                       _HintsForMain;
-	nJson                                                       _HintsForExclusions;
-	std::set<std::string>                                       _ModNames;
-	std::vector<std::pair<std::string, std::shared_ptr<nJson>>> _ExclusionJsons;
-	std::mutex                                                  _lock;
+	ordered_nJson                                                       _HintsForMain;
+	ordered_nJson                                                       _HintsForExclusions;
+	std::set<std::string>                                               _ModNames;
+	std::map<std::string, std::shared_ptr<ordered_nJson>>               _ExclusionJsons;
+	std::map<std::string, std::string>                                 _Key1Values;
+	std::map<std::string, std::string>                                 _Key2Values;
+	std::map<std::string, size_t>                                      _Key1Index;
+	std::map<std::string, size_t>                                      _Key2Index;
+
+
+public:
+	std::mutex                                                          _lock;
 };
