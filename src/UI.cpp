@@ -368,6 +368,7 @@ void SMFRenderer::RenderExclusions()
 				ImGui::PopID();
 				ImGui::TreePop();
 			}
+
 		}
 	}
 	static char buffer[256]{ "" };

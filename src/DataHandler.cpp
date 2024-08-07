@@ -461,6 +461,7 @@ void DataHandler::PatchAMMO() {
 						}
 					}
 				}
+				}
 			} else
 				logger::info( "PROJ Record with Name '{}' with FormID '{:08X}' from file '{}' is nullptr i.e., NULL", ammo->GetFullName(), ammo->GetRawFormID(), ammo->GetFile()->GetFilename() );
 			_AmmoInfo.push_back( j );

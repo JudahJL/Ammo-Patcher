@@ -63,7 +63,7 @@ void Logging::SetupLog(std::optional<fs::path> path, std::shared_ptr<spdlog::log
 {
 	if (IsDebuggerPresent()) {
 		log->sinks().reserve(2);
-		log->sinks().push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
+		log->sinks().push_back(_MSVCSink);
 	} else {
 		log->sinks().reserve(1);
 	}

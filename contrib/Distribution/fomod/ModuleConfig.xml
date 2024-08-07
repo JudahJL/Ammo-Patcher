@@ -1,6 +1,7 @@
 <!-- Created with FOMOD Creation Tool 1.7.0.37 [http://www.nexusmods.com/fallout4/mods/6821] --> 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd"> 
 	<moduleName>Ammo_Patcher</moduleName> 
+	<moduleName>Ammo_Patcher</moduleName> 
 	<moduleImage path="Image\pixlr-image-generator-794957a6-90aa-4bde-8ea5-c48051d5f002.png" /> 
 	<requiredInstallFiles> 
 		<file source="Common\ExclusionHint.json" destination="SKSE\Plugins\Ammo Patcher\Hints\ExclusionHint.json" /> 
@@ -101,3 +102,4 @@ Minimal Size with Performance: This build is optimized to reduce the executable 
 		</installStep> 
 	</installSteps> 
 </config>
+
