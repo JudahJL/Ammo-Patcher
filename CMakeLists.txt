@@ -5,7 +5,7 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 
 set(CURRENT_PROJECT_MAJOR_VER 1)
-set(CURRENT_PROJECT_MINOR_VER 2)
+set(CURRENT_PROJECT_MINOR_VER 3)
 set(CURRENT_PROJECT_PATCH_VER 0)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -26,7 +26,6 @@ message(STATUS "Build Type : ${CMAKE_BUILD_TYPE}")
 
 project(
         Ammo_Patcher
-        VERSION "${CURRENT_PROJECT_MAJOR_VER}.${CURRENT_PROJECT_MINOR_VER}.${CURRENT_PROJECT_PATCH_VER}.${CURRENT_PROJECT_BUILD_VER}"
         VERSION "${CURRENT_PROJECT_MAJOR_VER}.${CURRENT_PROJECT_MINOR_VER}.${CURRENT_PROJECT_PATCH_VER}.${CURRENT_PROJECT_BUILD_VER}"
         DESCRIPTION "A simple SKSE plugin built with CommonLibSSE to patch AMMO"
         LANGUAGES CXX)
@@ -97,9 +96,8 @@ message("\tTests: ${BUILD_TESTS}")
 ########################################################################################################################
 set(PROJECT_AUTHOR "NoName365")
 
-# add_subdirectory($ENV{CommonLibSSEPath} CommonLibSSE-NG)
-# include($ENV{CommonLibSSEPath}/cmake/CommonLibSSE.cmake)
-find_package(CommonLibSSE CONFIG REQUIRED)
+add_subdirectory($ENV{CommonLibSSEPath} CommonLibSSE-NG)
+include($ENV{CommonLibSSEPath}/cmake/CommonLibSSE.cmake)
 include(FetchContent)
 
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
@@ -108,12 +106,15 @@ FetchContent_MakeAvailable(json)
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources} ${misc} AUTHOR ${PROJECT_AUTHOR})
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
 
+find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
+
 target_include_directories(${PROJECT_NAME}
         PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>
         $<INSTALL_INTERFACE:src>
-        nlohmann_json::nlohmann_json)
+        nlohmann_json::nlohmann_json
+        ${CLIB_UTIL_INCLUDE_DIRS})
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -155,19 +156,20 @@ endforeach()
 if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_PDB_FILE:${PROJECT_NAME}> "${CONTRIB_PROJECT_DIR}")
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_PDB_FILE:${PROJECT_NAME}> "${CONTRIB_PROJECT_DIR}")
 endif()
+
 file(GLOB_RECURSE OUTPUT_DLLS "${CONTRIB_PROJECT_DIR}/${PROJECT_NAME}.dll")
-file(GLOB_RECURSE OUTPUT_DLLS "${CONTRIB_PROJECT_DIR}/${PROJECT_NAME}.dll")
+
 if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
     file(GLOB_RECURSE OUTPUT_PDBS "${CONTRIB_PROJECT_DIR}/${PROJECT_NAME}.pdb")
-    file(GLOB_RECURSE OUTPUT_PDBS "${CONTRIB_PROJECT_DIR}/${PROJECT_NAME}.pdb")
 endif()
+
 file(GLOB_RECURSE OUTPUT_JSONS "${CONTRIB_COMMON_DIR}/**.json")
-file(GLOB_RECURSE OUTPUT_JSONS "${CONTRIB_COMMON_DIR}/**.json")
+
 set_property(TARGET ${PROJECT_NAME}
         APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_DLLS}"
-		APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_JSONS}")
+		    APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_JSONS}")
+
 if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
     set_property(TARGET ${PROJECT_NAME}
             APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_PDBS}")
@@ -175,9 +177,7 @@ endif()
 
 # Automatic deployment to Mod Organizer 2 mod directory.
 foreach (DEPLOY_TARGET $ENV{SkyrimPluginTargets})    #set your "SkyrimPluginTargets" environment variable to your MO2's Mods Folder
-        set(DEPLOY_TARGET_COMMON_DIR "${DEPLOY_TARGET}/${PROJECT_NAME} - ${CMAKE_BUILD_TYPE}/SKSE/Plugins/")        
-
-        set(DEPLOY_TARGET_COMMON_DIR "${DEPLOY_TARGET}/${PROJECT_NAME} - ${CMAKE_BUILD_TYPE}/SKSE/Plugins/")        
+        set(DEPLOY_TARGET_COMMON_DIR "${DEPLOY_TARGET}/${PROJECT_NAME} - ${CMAKE_BUILD_TYPE}/SKSE/Plugins/")              
 
         message("Adding deployment target ${DEPLOY_TARGET}.")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -195,7 +195,6 @@ foreach (DEPLOY_TARGET $ENV{SkyrimPluginTargets})    #set your "SkyrimPluginTarg
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CONTRIB_CONFIGURATION_DIR}/My Config/Ammo_Patcher_Default.json" "${DEPLOY_TARGET}/Common For ${PROJECT_NAME}/SKSE/Plugins/Ammo Patcher/")
         if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
                 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_PDB_FILE:${PROJECT_NAME}> "${DEPLOY_TARGET_COMMON_DIR}/")
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_PDB_FILE:${PROJECT_NAME}> "${DEPLOY_TARGET_COMMON_DIR}/")
         endif()
 endforeach()

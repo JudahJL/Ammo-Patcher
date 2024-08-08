@@ -1,8 +1,8 @@
 {
   "name": "ammopatcher",
-  "version-string": "1.0.7.0",
+  "version-string": "1.2.0",
   "port-version": 0,
-  "description": "A simple SKSE plugin to patch AMMO",
+  "homepage": "https://www.skyrimng.com",
   "license": "Apache-2.0",
   "dependencies": [
     "fast-cpp-csv-parser",
@@ -14,8 +14,8 @@
     "directxmath",
     "directxtk",
     "boost-stl-interfaces",
-    "commonlibsse-ng",
-    "nlohmann-json"
+    "nlohmann-json",
+    "clib-util"
   ],
   "overrides": [
     {
