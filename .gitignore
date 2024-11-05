@@ -558,3 +558,5 @@ contrib/Distribution/Plugin**/
 **.iso.*
 
 **/*.log
+
+./.github

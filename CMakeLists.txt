@@ -48,8 +48,8 @@ configure_file(
 )
 
 configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.rc.in
-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/version.rc
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Version.rc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/cmake/Version.rc
         @ONLY
 )
 
@@ -68,7 +68,7 @@ file(
         sources
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
-        ${CMAKE_CURRENT_BINARY_DIR}/version.rc
+#        ${CMAKE_CURRENT_BINARY_DIR}/version.rc
 )
 
 # Exclude specific subdirectory from sources
@@ -165,7 +165,7 @@ install(TARGETS ${PROJECT_NAME}
 ########################################################################################################################
 # Automatic deployment to FOMOD directory.
 set(DISTRIBUTION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/")
-set(CONTRIB_PROJECT_DIR "${DISTRIBUTION_DIR}/Plugin - ${CURRENT_BUILD_TYPE}/")
+set(CONTRIB_PROJECT_DIR "${DISTRIBUTION_DIR}/Plugin - ${CMAKE_BUILD_TYPE}/")
 set(CONTRIB_CONFIGURATION_GLOBAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Configuration/Global/")
 set(CONTRIB_CONFIGURATION_MY_CONFIG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Configuration/My Config/")
 set(CONTRIB_COMMON_DIR "${DISTRIBUTION_DIR}/Common/")
