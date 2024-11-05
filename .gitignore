@@ -559,4 +559,4 @@ contrib/Distribution/Plugin**/
 
 **/*.log
 
-./.github
+#./.github
