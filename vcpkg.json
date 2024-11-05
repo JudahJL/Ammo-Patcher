@@ -1,0 +1,18 @@
+{
+  "name": "ammopatcher",
+  "version-string": "1.3.2.3",
+  "port-version": 0,
+  "description": "A simple SKSE plugin to patch AMMO",
+  "license": "Apache-2.0",
+  "dependencies": [
+    "fast-cpp-csv-parser",
+    "rsm-binary-io",
+    "simpleini",
+    "spdlog",
+    "xbyak",
+    "rapidcsv",
+    "directxmath",
+    "directxtk",
+    "nlohmann-json"
+  ]
+}
