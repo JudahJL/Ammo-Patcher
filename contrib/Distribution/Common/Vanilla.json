@@ -1,79 +1,75 @@
 {
-    "Logging": {
-        "LogLevel": "info"
+  "Logging": {
+    "LogLevel": "info"
+  },
+  "AMMO": {
+    "Infinite AMMO": {
+      "Player": false,
+      "Teammate": false
     },
-    "User Details": {
-        "Username": "User"
-    },
-    "AMMO": {
-        "Infinite AMMO": {
-            "Player": false,
-            "Teammate": false
-        },
-        "Arrow": {
-            "Enable Arrow Patch": true,
-            "Change Gravity": {
-                "Enable": true,
-                "Gravity": 0.35
-            },
-            "Change Speed": {
-                "Enable": true,
-                "Speed": 3600.0
-            },
-            "Limit Speed": {
-                "Enable": false,
-                "Min": 1000.0,
-                "Max": 2500.0
-            },
-            "Randomize Speed": {
-                "Enable": false,
-                "Min": 1000.0,
-                "Max": 2500.0
-            },
-            "Limit Damage": {
-                "Enable": false,
-                "Min": 10.0,
-                "Max": 100.0
-            },
-            "Sound": {
-                "Change Sound Level": {
-                    "Enable": false,
-                    "Sound Level": "kSilent"
-                }
-            }
-        },
-        "Bolt": {
-            "Enable Bolt Patch": true,
-            "Change Gravity": {
-                "Enable": true,
-                "Gravity": 0.35
-            },
-            "Change Speed": {
-                "Enable": true,
-                "Speed": 5400.0
-            },
-            "Limit Speed": {
-                "Enable": false,
-                "Min": 4000.0,
-                "Max": 12000.0
-
-            },
-            "Randomize Speed": {
-                "Enable": false,
-                "Min": 1500.0,
-                "Max": 3500.0
-            },
-            "Limit Damage": {
-                "Enable": false,
-                "Min": 10.0,
-                "Max": 100.0
-            },
-            "Sound": {
-                "Change Sound Level": {
-                    "Enable": false,
-                    "Sound Level": "kSilent"
-                }
-            }
+    "Arrow": {
+      "Enable Arrow Patch": true,
+      "Change Gravity": {
+        "Enable": true,
+        "Gravity": 0.35
+      },
+      "Change Speed": {
+        "Enable": true,
+        "Speed": 3600.0
+      },
+      "Limit Speed": {
+        "Enable": false,
+        "Min": 1000.0,
+        "Max": 2500.0
+      },
+      "Randomize Speed": {
+        "Enable": false,
+        "Min": 1000.0,
+        "Max": 2500.0
+      },
+      "Limit Damage": {
+        "Enable": false,
+        "Min": 10.0,
+        "Max": 100.0
+      },
+      "Sound": {
+        "Change Sound Level": {
+          "Enable": false,
+          "Sound Level": "kSilent"
         }
+      }
+    },
+    "Bolt": {
+      "Enable Bolt Patch": true,
+      "Change Gravity": {
+        "Enable": true,
+        "Gravity": 0.35
+      },
+      "Change Speed": {
+        "Enable": true,
+        "Speed": 5400.0
+      },
+      "Limit Speed": {
+        "Enable": false,
+        "Min": 4000.0,
+        "Max": 12000.0
+      },
+      "Randomize Speed": {
+        "Enable": false,
+        "Min": 1500.0,
+        "Max": 3500.0
+      },
+      "Limit Damage": {
+        "Enable": false,
+        "Min": 10.0,
+        "Max": 100.0
+      },
+      "Sound": {
+        "Change Sound Level": {
+          "Enable": false,
+          "Sound Level": "kSilent"
+        }
+      }
     }
+  }
 }

@@ -1,0 +1,310 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "Logging": {
+      "$ref": "#/definitions/LogLevelModel"
+    },
+    "AMMO": {
+      "$ref": "#/definitions/AmmoModel"
+    }
+  },
+  "required": [
+    "Logging",
+    "AMMO"
+  ],
+  "title": "APModel",
+  "type": "object",
+  "definitions": {
+    "AmmoModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Infinite AMMO": {
+          "$ref": "#/definitions/InfiniteAmmoModel"
+        },
+        "Arrow": {
+          "$ref": "#/definitions/ArrowModel"
+        },
+        "Bolt": {
+          "$ref": "#/definitions/BoltModel"
+        }
+      },
+      "required": [
+        "Infinite AMMO",
+        "Arrow",
+        "Bolt"
+      ],
+      "title": "AmmoModel",
+      "type": "object"
+    },
+    "ArrowModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable Arrow Patch": {
+          "title": "Enable Arrow Patch",
+          "type": "boolean"
+        },
+        "Change Gravity": {
+          "$ref": "#/definitions/ChangeGravityModel"
+        },
+        "Change Speed": {
+          "$ref": "#/definitions/ChangeSpeedModel"
+        },
+        "Limit Speed": {
+          "$ref": "#/definitions/LimitSpeedModel"
+        },
+        "Randomize Speed": {
+          "$ref": "#/definitions/RandomizeSpeedModel"
+        },
+        "Limit Damage": {
+          "$ref": "#/definitions/LimitDamageModel"
+        },
+        "Sound": {
+          "$ref": "#/definitions/SoundModel"
+        }
+      },
+      "required": [
+        "Enable Arrow Patch",
+        "Change Gravity",
+        "Change Speed",
+        "Limit Speed",
+        "Randomize Speed",
+        "Limit Damage",
+        "Sound"
+      ],
+      "title": "ArrowModel",
+      "type": "object"
+    },
+    "BoltModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable Bolt Patch": {
+          "title": "Enable Bolt Patch",
+          "type": "boolean"
+        },
+        "Change Gravity": {
+          "$ref": "#/definitions/ChangeGravityModel"
+        },
+        "Change Speed": {
+          "$ref": "#/definitions/ChangeSpeedModel"
+        },
+        "Limit Speed": {
+          "$ref": "#/definitions/LimitSpeedModel"
+        },
+        "Randomize Speed": {
+          "$ref": "#/definitions/RandomizeSpeedModel"
+        },
+        "Limit Damage": {
+          "$ref": "#/definitions/LimitDamageModel"
+        },
+        "Sound": {
+          "$ref": "#/definitions/SoundModel"
+        }
+      },
+      "required": [
+        "Enable Bolt Patch",
+        "Change Gravity",
+        "Change Speed",
+        "Limit Speed",
+        "Randomize Speed",
+        "Limit Damage",
+        "Sound"
+      ],
+      "title": "BoltModel",
+      "type": "object"
+    },
+    "ChangeGravityModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable": {
+          "$ref": "#/definitions/EnableType"
+        },
+        "Gravity": {
+          "$ref": "#/definitions/GravityType"
+        }
+      },
+      "required": [
+        "Enable",
+        "Gravity"
+      ],
+      "title": "ChangeGravityModel",
+      "type": "object"
+    },
+    "ChangeSoundLevelModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable": {
+          "$ref": "#/definitions/EnableType"
+        },
+        "Sound Level": {
+          "$ref": "#/definitions/SoundLevelType"
+        }
+      },
+      "required": [
+        "Enable",
+        "Sound Level"
+      ],
+      "title": "ChangeSoundLevelModel",
+      "type": "object"
+    },
+    "ChangeSpeedModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable": {
+          "$ref": "#/definitions/EnableType"
+        },
+        "Speed": {
+          "$ref": "#/definitions/SpeedType"
+        }
+      },
+      "required": [
+        "Enable",
+        "Speed"
+      ],
+      "title": "ChangeSpeedModel",
+      "type": "object"
+    },
+    "EnableType": {
+      "type": "boolean"
+    },
+    "GravityType": {
+      "type": "number"
+    },
+    "InfiniteAmmoModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Player": {
+          "title": "Player",
+          "type": "boolean"
+        },
+        "Teammate": {
+          "title": "Teammate",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "Player",
+        "Teammate"
+      ],
+      "title": "InfiniteAmmoModel",
+      "type": "object"
+    },
+    "LimitDamageModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable": {
+          "$ref": "#/definitions/EnableType"
+        },
+        "Min": {
+          "$ref": "#/definitions/MinType"
+        },
+        "Max": {
+          "$ref": "#/definitions/MaxType"
+        }
+      },
+      "required": [
+        "Enable",
+        "Min",
+        "Max"
+      ],
+      "title": "LimitDamageModel",
+      "type": "object"
+    },
+    "LimitSpeedModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable": {
+          "$ref": "#/definitions/EnableType"
+        },
+        "Min": {
+          "$ref": "#/definitions/MinType"
+        },
+        "Max": {
+          "$ref": "#/definitions/MaxType"
+        }
+      },
+      "required": [
+        "Enable",
+        "Min",
+        "Max"
+      ],
+      "title": "LimitSpeedModel",
+      "type": "object"
+    },
+    "LogLevelModel": {
+      "additionalProperties": false,
+      "properties": {
+        "LogLevel": {
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warning",
+            "error",
+            "critical",
+            "off"
+          ],
+          "title": "Loglevel",
+          "type": "string"
+        }
+      },
+      "required": [
+        "LogLevel"
+      ],
+      "title": "LogLevelModel",
+      "type": "object"
+    },
+    "MaxType": {
+      "type": "number"
+    },
+    "MinType": {
+      "type": "number"
+    },
+    "RandomizeSpeedModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Enable": {
+          "$ref": "#/definitions/EnableType"
+        },
+        "Min": {
+          "$ref": "#/definitions/MinType"
+        },
+        "Max": {
+          "$ref": "#/definitions/MaxType"
+        }
+      },
+      "required": [
+        "Enable",
+        "Min",
+        "Max"
+      ],
+      "title": "RandomizeSpeedModel",
+      "type": "object"
+    },
+    "SoundLevelType": {
+      "enum": [
+        "kLoud",
+        "kNormal",
+        "kSilent",
+        "kVeryLoud",
+        "kQuiet"
+      ],
+      "type": "string"
+    },
+    "SoundModel": {
+      "additionalProperties": false,
+      "properties": {
+        "Change Sound Level": {
+          "$ref": "#/definitions/ChangeSoundLevelModel"
+        }
+      },
+      "required": [
+        "Change Sound Level"
+      ],
+      "title": "SoundModel",
+      "type": "object"
+    },
+    "SpeedType": {
+      "type": "number"
+    }
+  }
+}

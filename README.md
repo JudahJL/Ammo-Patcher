@@ -15,8 +15,6 @@ A simple SKSE plugin to patch All AMMO at runtime. Supports All Runtimes.
   - Desktop development with C++
 - [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG)
   - No Need To Install (or) Download Separately. vcpkg will install it
-- Recommended : [Visual Studio Code](https://code.visualstudio.com/0)
-  - This is What I use
   
 ## User Requirements
 - [Skyrim Script Extender](https://skse.silverlock.org/)
@@ -32,15 +30,7 @@ Use Git GUI or At the Directory of your choice, open terminal (or) cmd (or) Powe
 git clone https://github.com/JudahJL/Ammo-Patcher.git
 ```
 
-## Build Instructions
-If you are using [Visual Studio Code](https://code.visualstudio.com/0), Select A Build Preset and Click Build. There are 4 Build Presets
-- Debug : Purely Debugging, No Optimizations. Highly Recomended For Debugging.
-- Release : Highly Optimized, No Debugging. Highly Recomended For Release.
-- RelWithDebInfo : Partly Optimized, Partly for Debugging.
-- MinSizeRel : Focus on Smaller Size rather than Optimizations. is Still Optimized.
-
 ## Extra
-- The a.h and s.h header files in include directory are for extracting offsets of addresses of the game from Address Library. It is of no relevance to this Project.
 - It is Adviced to add "VsDevCmd.bat" from Visual Studio to your Terminal (or) IDE to execute automatically to avoid cmake errors like the one mentioned below.This was a HUGE Headache for me. If you want to know more about "VsDevCmd.bat", Google is your Friend.
 ```
   The CMAKE_CXX_COMPILER:

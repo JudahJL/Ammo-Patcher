@@ -1,104 +1,119 @@
 {
-    "version": 3,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 30,
-        "patch": 0
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 29,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "CMAKE_CXX_FLAGS": "$env{COMMONLIBSSE_COMPILER} $env{COMMONLIBSSE_PLATFORM} $env{COMMONLIBSSE_TEXT}"
+      }
     },
-    "configurePresets": [
-        {
-            "name": "base",
-            "hidden": true,
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "installDir": "${sourceDir}/install/${presetName}",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
-            "cacheVariables": {
-                "CMAKE_CXX_COMPILER": "cl.exe",
-                "CMAKE_CXX_FLAGS": "/permissive- /Zc:preprocessor /EHsc /MP /Wall /W4 /wd5246 -DWIN32_LEAN_AND_MEAN -DNOMINMAX -DUNICODE -D_UNICODE /await:strict /Zc:alignedNew /Zc:auto /Zc:__cplusplus /Zc:externC /Zc:externConstexpr /Zc:forScope /Zc:hiddenFriend /Zc:implicitNoexcept /Zc:lambda /Zc:noexceptTypes /Zc:referenceBinding /Zc:rvalueCast /Zc:sizedDealloc /Zc:strictStrings /Zc:ternary /Zc:threadSafeInit /Zc:trigraphs /Zc:wchar_t /wd4200",
-                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-                "VCPKG_TARGET_TRIPLET": "x64-windows-static",
-                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake",
-                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            }
-        },
-        {
-            "name": "Debug",
-            "inherits": [
-                "base"
-            ],
-            "displayName": "Debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_FLAGS_DEBUG": "/Zi /sdl /GS /guard:cf /Gy /Od /fp:strict",
-                "CMAKE_SHARED_LINKER_FLAGS_DEBUG": "/DEBUG:FULL /INCREMENTAL /OPT:NOREF /OPT:NOICF"
-            }
-        },
-        {
-            "name": "Release",
-            "inherits": [
-                "base"
-            ],
-            "displayName": "Release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_FLAGS_RELEASE": "/GL /Gy /Gw /fp:fast /O2 /Ob2 /Oi /Ot /Oy /sdl- /GS- /guard:cf-",
-                "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "/LTCG /INCREMENTAL:NO /OPT:REF /OPT:ICF"
-            }
-        },
-        {
-            "name": "RelWithDebInfo",
-            "inherits": [
-                "base"
-            ],
-            "displayName": "RelWithDebInfo",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "/Zi /GL /Gy /Gw /fp:fast /O2 /Ob2 /Oi /Ot /Oy /sdl /GS /guard:cf",
-                "CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO": "/DEBUG:FULL /LTCG /INCREMENTAL:NO /OPT:REF /OPT:ICF"
-            }
-        },
-        {
-            "name": "MinSizeRel",
-            "inherits": [
-                "base"
-            ],
-            "displayName": "MinSizeRel",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "MinSizeRel",
-                "CMAKE_CXX_FLAGS_MINSIZEREL": "/GL /Gy /Gw /fp:fast /O1 /Ob2 /Oi /Ot /Oy /sdl- /GS- /guard:cf-",
-                "CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL": "/LTCG /INCREMENTAL:NO /OPT:REF /OPT:ICF"
-            }
+    {
+      "name": "vcpkg",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+        "VCPKG_HOST_TRIPLET": "x64-windows-static-md"
+      }
+    },
+    {
+      "name": "win32",
+      "hidden": true,
+      "environment": {
+        "COMMONLIBSSE_PLATFORM": "-DWIN32_LEAN_AND_MEAN -DNOMINMAX"
+      }
+    },
+    {
+      "name": "win32-unicode",
+      "hidden": true,
+      "inherits": "win32",
+      "environment": {
+        "COMMONLIBSSE_TEXT": "-DUNICODE -D_UNICODE"
+      }
+    },
+    {
+      "name": "x64",
+      "hidden": true,
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "msvc",
+      "hidden": true,
+      "environment": {
+        "COMMONLIBSSE_COMPILER": "/permissive- /Zc:preprocessor /EHsc $penv{CXXFLAGS}"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-msvc-x64",
+          "enableMicrosoftCodeAnalysis": true,
+          "enableClangTidyCodeAnalysis": true
         }
-    ],
-    "buildPresets": [
-        {
-            "name": "Debug",
-            "displayName": "Debug",
-            "configurePreset": "Debug",
-            "description": ""
-        },
-        {
-            "name": "Release",
-            "displayName": "Release",
-            "configurePreset": "Release",
-            "description": ""
-        },
-        {
-            "name": "RelWithDebInfo",
-            "displayName": "RelWithDebInfo",
-            "configurePreset": "RelWithDebInfo",
-            "description": ""
-        },
-        {
-            "name": "MinSizeRel",
-            "displayName": "MinSizeRel",
-            "configurePreset": "MinSizeRel",
-            "description": ""
+      }
+    },
+    {
+      "name": "debug-msvc",
+      "inherits": [
+        "base",
+        "vcpkg",
+        "win32-unicode",
+        "x64",
+        "msvc"
+      ],
+      "displayName": "Debug",
+      "description": "Debug build for testing.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Debug"
         }
-    ]
+      }
+    },
+    {
+      "name": "release-msvc",
+      "inherits": [
+        "base",
+        "vcpkg",
+        "win32-unicode",
+        "x64",
+        "msvc"
+      ],
+      "displayName": "Release",
+      "description": "Optimized release build.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Release"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-release-msvc",
+      "displayName": "Release (MSVC)",
+      "configurePreset": "release-msvc",
+      "description": "Optimized release build."
+    },
+    {
+      "name": "build-debug-msvc",
+      "displayName": "Debug (MSVC)",
+      "configurePreset": "debug-msvc",
+      "description": "Debug build for testing."
+    }
+  ]
 }

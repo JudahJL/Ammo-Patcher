@@ -1,32 +1,19 @@
 #include "Events.h"
+#include "Settings.h"
 #include "logging.h"
-#include "UI.h"
+#include "timeit.h"
 
-SKSEPluginLoad( const SKSE::LoadInterface* a_skse ) {
-	// while (IsDebuggerPresent() == 0) {
-	// 	using namespace std::chrono_literals;
-	// 	constexpr auto wait_time{5s};
-	// 	std::this_thread::sleep_for(wait_time);
-	// }
-	const auto startSPL = std::chrono::high_resolution_clock::now();
+SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
+    // while(REX::W32::IsDebuggerPresent() == 0) {
+    //     using std::chrono_literals::operator""s;
+    //     constexpr auto wait_time{ 5s };
+    //     std::this_thread::sleep_for(wait_time);
+    // }
+    InitializeLogging();
 
-	[[ maybe_unused ]] const Logging logger(spdlog::level::trace, spdlog::level::off);
-
-	logger::trace("Logger was initialized");
-
-	SKSE::Init( a_skse );
-
-	logger::trace("SKSE::Init(const SKSE::LoadInterface* a_intfc) was Called");
-
-	SKSEEvent::InitializeMessaging();
-
-
-	SMFRenderer::Register();
-
-	const auto nanosecondsTakenForSPL = std::chrono::duration( std::chrono::high_resolution_clock::now() - startSPL );
-
-	logger::info("Time Taken in {} totally is {} nanoseconds or {} microseconds or {} milliseconds or {} seconds or {} minutes", std::source_location::current().function_name(), nanosecondsTakenForSPL.count(),
-		std::chrono::duration_cast<std::chrono::microseconds>(nanosecondsTakenForSPL).count(), std::chrono::duration_cast<std::chrono::milliseconds>(nanosecondsTakenForSPL).count(),
-		std::chrono::duration_cast<std::chrono::seconds>(nanosecondsTakenForSPL).count(), std::chrono::duration_cast<std::chrono::minutes>(nanosecondsTakenForSPL).count() );
-	return true;
+    [[maybe_unused]] const timeit t;
+    SKSE::Init(a_skse, false);
+    Settings::GetSingleton().LoadSchema().LoadPresets().SetLogAndFlushLevel().LoadExclusions();
+    SKSEEvent::InitializeMessaging();
+    return true;
 }

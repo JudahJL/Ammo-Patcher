@@ -1,104 +1,50 @@
-<!-- Created with FOMOD Creation Tool 1.7.0.37 [http://www.nexusmods.com/fallout4/mods/6821] --> 
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd"> 
-	<moduleName>Ammo_Patcher</moduleName>
-	<moduleImage path="Image\pixlr-image-generator-794957a6-90aa-4bde-8ea5-c48051d5f002.png" /> 
+<!-- Created with FOMOD Creation Tool 1.7.0.37 [http://www.nexusmods.com/fallout4/mods/6821] -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+	<moduleName>Ammo_Patcher</moduleName> 
+	<moduleImage path="Images\AmmoPatcherLogo.png" /> 
 	<requiredInstallFiles> 
-		<file source="Common\ExclusionHint.json" destination="SKSE\Plugins\Ammo Patcher\Hints\ExclusionHint.json" /> 
-		<file source="Common\MainHint.json" destination="SKSE\Plugins\Ammo Patcher\Hints\MainHint.json" /> 
-		<file source="Common\Action Based Projectiles.json" destination="SKSE\Plugins\Ammo Patcher\Presets\Action Based Projectiles.json" /> 
-		<file source="Common\Default.json" destination="SKSE\Plugins\Ammo Patcher\Presets\Default.json" /> 
-		<file source="Common\Vanilla.json" destination="SKSE\Plugins\Ammo Patcher\Presets\Vanilla.json" /> 
-		<file source="Common\Ammo_Patcher_Default.json" destination="SKSE\Plugins\Ammo Patcher\Ammo_Patcher_Default.json" /> 
+		<file source="Common\Ammo_Patcher.json" destination="SKSE\Plugins\Ammo_Patcher.json" />
+		<file source="Common\APConfig_schema.json" destination="SKSE\Plugins\APConfig_schema.json" />
+		<file source="Common\Action Based Projectiles.json" destination="SKSE\Plugins\Ammo Patcher\Presets\Action Based Projectiles.json" />
+		<file source="Common\Default.json" destination="SKSE\Plugins\Ammo Patcher\Presets\Default.json" />
+		<file source="Common\Vanilla.json" destination="SKSE\Plugins\Ammo Patcher\Presets\Vanilla.json" />
 	</requiredInstallFiles> 
 	<installSteps order="Explicit"> 
 		<installStep name="Developer Options"> 
 			<optionalFileGroups order="Explicit"> 
-				<group name="Build Type" type="SelectExactlyOne"> 
+				<group name="Build Type" type="SelectExactlyOne">
 					<plugins order="Explicit"> 
 						<plugin name="Release"> 
-							<description>Installs the Release Build: Highly recommended for most users, offering the highest performance.&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-Maximum Optimization, No Debugging: This build is optimized for the best performance and does not include debugging information.</description> 
-							<image path="Image\pixlr-image-generator-794957a6-90aa-4bde-8ea5-c48051d5f002.png" /> 
+							<description>Installs the Release Build: Highly recommended for most users, offering the highest performance.</description>
+							<image path="Images\AmmoPatcherLogo.png" /> 
 							<conditionFlags> 
-								<flag name="release">On</flag> 
-							</conditionFlags> 
+								<flag name="release">On</flag>
+							</conditionFlags>
 							<files> 
-								<file source="Plugin - Release\Ammo_Patcher.dll" destination="SKSE\Plugins\Ammo_Patcher.dll" priority="0" /> 
+								<file source="Plugin - Release\Ammo_Patcher.dll" destination="SKSE\Plugins\Ammo_Patcher.dll"/>
 							</files> 
 							<typeDescriptor> 
-								<type name="Recommended"/> 
-							</typeDescriptor> 
+								<type name="Recommended"/>
+							</typeDescriptor>
 						</plugin> 
 						<plugin name="Debug"> 
-							<description>Installs the Debug Build: Ideal for development and testing.&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-No Optimization, Maximum Debugging: This build provides extensive debug information to assist in diagnosing issues.&#13;&#10;
-&#13;&#10;
-Crash Reporting: If the game crashes due to this SKSE plugin, please provide the details for troubleshooting.&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-Note: While I will review any reports, I cannot guarantee a fix for every bug or crash.</description> 
-							<image path="Image\pixlr-image-generator-794957a6-90aa-4bde-8ea5-c48051d5f002.png" /> 
+							<description>Installs the Debug Build: Ideal for development and testing.</description> 
+							<image path="Images\AmmoPatcherLogo.png" /> 
 							<conditionFlags> 
-								<flag name="debug">On</flag> 
-							</conditionFlags> 
+								<flag name="debug">On</flag>
+							</conditionFlags>
 							<files> 
-								<file source="Plugin - Debug\Ammo_Patcher.dll" destination="SKSE\Plugins\Ammo_Patcher.dll" priority="0" /> 
-								<file source="Plugin - Debug\Ammo_Patcher.pdb" destination="SKSE\Plugins\Ammo_Patcher.pdb" priority="0" /> 
+								<file source="Plugin - Debug\Ammo_Patcher.dll" destination="SKSE\Plugins\Ammo_Patcher.dll"/> 
+								<file source="Plugin - Debug\Ammo_Patcher.pdb" destination="SKSE\Plugins\Ammo_Patcher.pdb"/>
 							</files> 
 							<typeDescriptor> 
-								<type name="Optional"/> 
-							</typeDescriptor> 
+								<type name="Optional"/>
+							</typeDescriptor>
 						</plugin> 
-						<plugin name="RelWithDebInfo"> 
-							<description>Installs the RelWithDebInfo Build: Useful for development and testing with performance optimizations.&#13;&#10;
-&#13;&#10;
-Optimized Performance with Debug Information: This build includes optimizations along with debug information, making it suitable for troubleshooting performance issues.&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-Use if the Game Crashes(optional): If the game crashes due to this SKSE Plugin, send the details for investigation.&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-No Guaranteed Fix: While I'll do my best to help, I can't guarantee a fix for your bug or crash.</description> 
-							<image path="Image\pixlr-image-generator-794957a6-90aa-4bde-8ea5-c48051d5f002.png" /> 
-							<conditionFlags> 
-								<flag name="RelWithDebInfo">On</flag> 
-							</conditionFlags> 
-							<files> 
-								<file source="Plugin - RelWithDebInfo\Ammo_Patcher.dll" destination="SKSE\Plugins\Ammo_Patcher.dll" priority="0" /> 
-								<file source="Plugin - RelWithDebInfo\Ammo_Patcher.pdb" destination="SKSE\Plugins\Ammo_Patcher.pdb" priority="0" /> 
-							</files> 
-							<typeDescriptor> 
-								<type name="Optional"/> 
-							</typeDescriptor> 
-						</plugin> 
-						<plugin name="MinSizeRel"> 
-							<description>Installs the MinSizeRel Build: Ideal for users who need to minimize the size of the build while maintaining reasonable performance.&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-&#13;&#10;
-Minimal Size with Performance: This build is optimized to reduce the executable size, making it suitable for environments with limited storage or distribution constraints.&#13;&#10;
-</description> 
-							<image path="Image\pixlr-image-generator-794957a6-90aa-4bde-8ea5-c48051d5f002.png" /> 
-							<conditionFlags> 
-								<flag name="MinSizeRel">On</flag> 
-							</conditionFlags> 
-							<files> 
-								<file source="Plugin - MinSizeRel\Ammo_Patcher.dll" destination="SKSE\Plugins\Ammo_Patcher.dll" priority="0" /> 
-							</files> 
-							<typeDescriptor> 
-								<type name="Optional"/> 
-							</typeDescriptor> 
-						</plugin> 
-					</plugins> 
+					</plugins>
 				</group> 
-			</optionalFileGroups> 
+			</optionalFileGroups>
 		</installStep> 
-	</installSteps> 
+	</installSteps>
 </config>
 
