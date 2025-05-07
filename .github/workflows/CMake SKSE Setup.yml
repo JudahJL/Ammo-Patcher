@@ -29,6 +29,14 @@ jobs:
         vcpkg: true
         vcvarsall: true
 
+    - name: Setup cmake
+      uses: lukka/get-cmake@latest
+
+    - name: Restore from cache and setup vcpkg executable and data files.
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgJsonGlob: '${{ github.workspace }}/vcpkg.json'
+
     - name: Configure and Run CMake Preset for "Debug" preset
       uses: lukka/run-cmake@v10
       with:
