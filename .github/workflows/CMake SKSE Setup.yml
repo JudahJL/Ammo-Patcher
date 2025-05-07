@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_NAME: Ammo_Patcher
-  PROJECT_VERSION: 2.0.0.0
+  PROJECT_VERSION: 2.0.0.1
 
 
 jobs:
@@ -20,13 +20,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup cmake
-      uses: lukka/get-cmake@latest
-
-    - name: Restore from cache and setup vcpkg executable and data files.
-      uses: lukka/run-vcpkg@v11
+    - name: Setup C++ environment
+      uses: aminya/setup-cpp@v1
       with:
-        vcpkgJsonGlob: '${{ github.workspace }}/vcpkg.json'
+        compiler: msvc
+        cmake: true
+        ninja: true
+        vcpkg: true
+        vcvarsall: true
 
     - name: Configure and Run CMake Preset for "Debug" preset
       uses: lukka/run-cmake@v10

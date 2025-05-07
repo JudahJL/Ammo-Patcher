@@ -72,7 +72,7 @@ Settings& Settings::LoadPresets() {
                     rapidjson::FileReadStream bis(file.get(), readBuffer, std::size(readBuffer));
                     if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis); sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
                         char buff[1'024];
-                        sprintf_s(buff, std::size(buff), "File '%ls':Error(offset %zu): %hs", path.c_str(), sd.GetErrorOffset(), rapidjson::GetParseError_En(sd.GetParseError()));
+                        sprintf_s(buff, std::size(buff), "File '%ls':Error(offset %zu): %s", path.c_str(), sd.GetErrorOffset(), rapidjson::GetParseError_En(sd.GetParseError()));
                         SPDLOG_ERROR(buff);
                         continue;
                     }
@@ -266,9 +266,7 @@ Settings& Settings::Patch() {
         "Enable Bolt Patch",   //22
         "Player",              //23
         "Teammate",            //24
-        "User Details",        //25
-        "Username",            //26
-        "Randomize Speed"      //27
+        "Randomize Speed"      //25
     };
 
     const auto& AMMO         = main_json[JsonKeys.at(0)];
@@ -286,8 +284,8 @@ Settings& Settings::Patch() {
     const auto& ALimitSpeed = Arrow[JsonKeys.at(11)];
     const auto& BLimitSpeed = Bolt[JsonKeys.at(11)];
 
-    const auto& ARandomizeSpeed = Arrow[JsonKeys.at(27)];
-    const auto& BRandomizeSpeed = Bolt[JsonKeys.at(27)];
+    const auto& ARandomizeSpeed = Arrow[JsonKeys.at(25)];
+    const auto& BRandomizeSpeed = Bolt[JsonKeys.at(25)];
 
     const auto& ALimitDamage = Arrow[JsonKeys.at(12)];
     const auto& BLimitDamage = Bolt[JsonKeys.at(12)];
@@ -343,8 +341,6 @@ Settings& Settings::Patch() {
     constexpr auto Gravity{ 9 };
     const auto     arrow_gravity_ = AChangeGravity[JsonKeys.at(Gravity)].GetFloat();
     const auto     bolt_gravity_  = BChangeGravity[JsonKeys.at(Gravity)].GetFloat();
-
-    // const auto user_name_ = main_json[JsonKeys.at(25)][JsonKeys.at(26)].GetString();
 
     //Sound Level
     constexpr auto SoundLevel{ 6 };
