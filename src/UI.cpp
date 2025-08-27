@@ -261,7 +261,7 @@ void SMFRenderer::RenderExclusions() {
             return;
         }
         char created_file_path[1'024]{};
-        std::snprintf(created_file_path, std::size(created_file_path), "Data/SKSE/Plugins/Ammo Patcher/Exclusions/%s.json", buff);
+        std::snprintf(created_file_path, std::size(created_file_path), "data/SKSE/Plugins/Ammo Patcher/Exclusions/%s.json", buff);
         if(FilePtrManager f{ created_file_path, "wb" }) {
             char                       writeBuffer[65'536];
             rapidjson::FileWriteStream os(f.get(), writeBuffer, sizeof(writeBuffer));
@@ -288,7 +288,7 @@ void SMFRenderer::RenderDebug() {
 void SMFRenderer::RenderEditPresets() {
     auto& settings{ Settings::GetSingleton() };
     if(ImGui::Button("Save Default Preset")) {
-        if(FilePtrManager f{ "Data/SKSE/Plugins/Ammo_Patcher.json", "wb" }) {
+        if(FilePtrManager f{ "data/SKSE/Plugins/Ammo_Patcher.json", "wb" }) {
             auto                u8_path{ Utils::wstringToString(settings.curr_preset.filename()) };
             rapidjson::Document doc{ rapidjson::kObjectType };
             doc.AddMember("Load", rapidjson::Value{}.SetString(u8_path.c_str(), u8_path.size(), doc.GetAllocator()), doc.GetAllocator());
@@ -344,7 +344,7 @@ void SMFRenderer::RenderEditPresets() {
             return;
         }
         char created_file_path[1'024]{};
-        std::snprintf(created_file_path, std::size(created_file_path), "Data/SKSE/Plugins/Ammo Patcher/Presets/%s.json", buff);
+        std::snprintf(created_file_path, std::size(created_file_path), "data/SKSE/Plugins/Ammo Patcher/Presets/%s.json", buff);
         if(FilePtrManager f{ created_file_path, "wb" }) {
             char                       writeBuffer[65'536];
             rapidjson::FileWriteStream os(f.get(), writeBuffer, sizeof(writeBuffer));

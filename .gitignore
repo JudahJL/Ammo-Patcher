@@ -558,3 +558,8 @@ contrib/Distribution/Plugin**/
 **.iso.*
 
 **/*.log
+/.cache/
+/.xmake/
+/vs*/
+/**/.venv*/
+/**/*.dll

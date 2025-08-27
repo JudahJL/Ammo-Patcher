@@ -7,14 +7,8 @@ A simple SKSE plugin to patch All AMMO at runtime. Supports All Runtimes.
 
 - [Git](https://git-scm.com/)
   - Download latest version from [Here](https://git-scm.com/downloads)
-- [CMake](https://cmake.org/)
-  - Download latest version from [Here](https://cmake.org/download/) and add to your `path` during installation. Must be above v3.24.0
-- [Vcpkg](https://github.com/microsoft/vcpkg)
-  - Add the environment variable `VCPKG_ROOT` with the value as the path to the folder containing vcpkg
 - [Visual Studio Community 2022](https://visualstudio.microsoft.com/)
   - Desktop development with C++
-- [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG)
-  - No Need To Install (or) Download Separately. vcpkg will install it
   
 ## User Requirements
 - [Skyrim Script Extender](https://skse.silverlock.org/)
@@ -39,11 +33,13 @@ git clone https://github.com/JudahJL/Ammo-Patcher.git
 
   is not a full path and was not found in the PATH.
 ``` 
+### Upgrading Packages (Optional)
+If you want to upgrade the project's dependencies, run the following commands:
+```bat
+xmake repo --update
+xmake require --upgrade
+```
 
 ## License
 
-[Apache License 2.0](LICENSE)
-
-## Credits
-- [CharmedBaryon](https://github.com/CharmedBaryon) For CommonLibSSE-NG
-- [Skyrim Scripting](https://github.com/SkyrimScriptinghttps://github.com/SkyrimScripting) for the Youtube Tutorials
+[MIT](LICENSE)

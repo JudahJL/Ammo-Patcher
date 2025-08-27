@@ -17,7 +17,7 @@ Settings& Settings::GetSingleton() {
 }
 
 Settings& Settings::LoadSchema() {
-    constexpr auto schema_path{ "Data/SKSE/Plugins/APConfig_schema.json" };
+    constexpr auto schema_path{ "data/SKSE/Plugins/APConfig_schema.json" };
     FilePtrManager schema{ schema_path };
     if(schema) {
         char                      readBuffer[65'535];
@@ -38,7 +38,7 @@ Settings& Settings::LoadSchema() {
 
 Settings& Settings::LoadPresets() {
     [[maybe_unused]] const timeit t;
-    constexpr auto                file_path{ "Data/SKSE/Plugins/Ammo_Patcher.json" };
+    constexpr auto                file_path{ "data/SKSE/Plugins/Ammo_Patcher.json" };
     FilePtrManager                file{ file_path };
     char                          readBuffer[65'535];
     if(file) {
@@ -49,16 +49,16 @@ Settings& Settings::LoadPresets() {
             SPDLOG_ERROR("Loading {} failed", file_path);
         } else {
             if(auto itr{ sd.FindMember("Load") }; itr != sd.MemberEnd() && itr->value.IsString()) {
-                curr_preset  = "Data/SKSE/Plugins/Ammo Patcher/Presets";
+                curr_preset  = "data/SKSE/Plugins/Ammo Patcher/Presets";
                 curr_preset /= itr->value.GetString();
                 if(curr_preset.extension() != ".json" || !std::filesystem::exists(curr_preset) || !std::filesystem::is_regular_file(curr_preset)) {
                     SPDLOG_ERROR("Couldn't Find '{}'. Will load Default.json", itr->value.GetString());
-                    curr_preset = "Data/SKSE/Plugins/Ammo Patcher/Presets/Default.json";
+                    curr_preset = "data/SKSE/Plugins/Ammo Patcher/Presets/Default.json";
                 }
             }
         }
     }
-    constexpr auto            presets_path{ "Data/SKSE/Plugins/Ammo Patcher/Presets/" };
+    constexpr auto            presets_path{ "data/SKSE/Plugins/Ammo Patcher/Presets/" };
     rapidjson::SchemaDocument schemaDoc{ presetSchemaDocument };
 
     if(fs::exists(presets_path) && !fs::is_empty(presets_path)) {
@@ -109,10 +109,10 @@ Settings& Settings::LoadPresets() {
         }
     }
     if(!presets.contains(curr_preset)) {
-        if(!presets.contains("Data/SKSE/Plugins/Ammo Patcher/Presets/Default.json")) {
+        if(!presets.contains("data/SKSE/Plugins/Ammo Patcher/Presets/Default.json")) {
             SKSE::stl::report_and_fail("Failed to load a preset");
         }
-        curr_preset = "Data/SKSE/Plugins/Ammo Patcher/Presets/Default.json";
+        curr_preset = "data/SKSE/Plugins/Ammo Patcher/Presets/Default.json";
     }
     return *this;
 }
@@ -121,7 +121,7 @@ Settings& Settings::LoadExclusions() {
     [[maybe_unused]] const timeit t;
     // ReSharper disable once CppTooWideScope
     char                          readBuffer[65'535];
-    constexpr auto                exclusions_path{ "Data/SKSE/Plugins/Ammo Patcher/Exclusions/" };
+    constexpr auto                exclusions_path{ "data/SKSE/Plugins/Ammo Patcher/Exclusions/" };
     if(fs::exists(exclusions_path) && !fs::is_empty(exclusions_path)) {
         for(const auto& entry : std::filesystem::directory_iterator(exclusions_path)) {
             const auto& path{ entry.path() };
@@ -236,7 +236,7 @@ Settings& Settings::PopulateFormIDMapFromExclusions() {
 Settings& Settings::Patch() {
     [[maybe_unused]] const timeit t;
     std::size_t                   patched{};
-    SPDLOG_INFO("*****************Processing Data*****************");
+    SPDLOG_INFO("*****************Processing data*****************");
     const auto& main_json{ presets[curr_preset] };
     SPDLOG_INFO("Selected Preset: {}", Utils::wstringToString(curr_preset));
 

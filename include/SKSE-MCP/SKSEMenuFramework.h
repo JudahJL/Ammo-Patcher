@@ -3,7 +3,6 @@
 #include <windows.h>
 
 #include <cassert>
-#include <codecvt>
 #include <locale>
 #include <string>
 #include <filesystem>
@@ -16,13 +15,13 @@
 // NOLINTBEGIN(*-redundant-void-arg, *-reserved-identifier, *-pro-type-reinterpret-cast,
 // *-use-using, *-avoid-c-arrays, *-avoid-return-with-void-value)
 
-static auto menuFramework{ GetModuleHandle(L"SKSEMenuFramework") };  // NOLINT(*-err58-cpp)
+static auto menuFramework{ GetModuleHandleW(L"SKSEMenuFramework") };  // NOLINT(*-err58-cpp)
 #define MENU_WINDOW SKSEMenuFramework::Model::WindowInterface*
 
 namespace SKSEMenuFramework {
 
     inline auto IsInstalled() -> bool {
-        constexpr auto dllPath{ "Data/SKSE/Plugins/SKSEMenuFramework.dll" };
+        constexpr auto dllPath{ "data/SKSE/Plugins/SKSEMenuFramework.dll" };
         return std::filesystem::exists(dllPath);
     }
 
@@ -87,11 +86,33 @@ namespace FontAwesome {
         if(func != nullptr) { return func(); }
     }
 
-    inline std::string UnicodeToUtf8(unsigned int codepoint) {
-        // return std::format("{:c}", codepoint);
-        std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-        return converter.to_bytes(codepoint);
+    inline std::string UnicodeToUtf8(unsigned int cp) {
+    char buf[4];
+    int len = 0;
+
+    // invalid code points → U+FFFD
+    if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
+        return "\xEF\xBF\xBD"; // U+FFFD
     }
+
+    if (cp <= 0x7F) {
+        buf[len++] = static_cast<char>(cp);
+    } else if (cp <= 0x7FF) {
+        buf[len++] = static_cast<char>(0xC0 | (cp >> 6));
+        buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
+    } else if (cp <= 0xFFFF) {
+        buf[len++] = static_cast<char>(0xE0 | (cp >> 12));
+        buf[len++] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
+    } else {
+        buf[len++] = static_cast<char>(0xF0 | (cp >> 18));
+        buf[len++] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+        buf[len++] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
+    }
+
+    return std::string(buf, len);
+}
 }  // namespace FontAwesome
 
 #pragma region Structs
@@ -14305,7 +14326,7 @@ namespace ImGui {
         using func_t           = ImGuiKeyRoutingData* (*)(ImGuiKeyChord);
         const auto* const func = reinterpret_cast<func_t>(GetProcAddress(menuFramework, "igGetShort"
                                                                                         "cutRouting"
-                                                                                        "Data"));
+                                                                                        "data"));
         return func(key_chord);
     }
 

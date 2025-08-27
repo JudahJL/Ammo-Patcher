@@ -5,6 +5,9 @@
 #ifndef FILEPTRMANAGER_H
 #define FILEPTRMANAGER_H
 
+#pragma warning(push)
+#pragma warning(disable: 4'996)
+
 class FilePtrManager
 {
 public:
@@ -73,4 +76,7 @@ private:
     FILE*   fp{};
     errno_t err{};
 };
+
+#pragma warning(pop)
+
 #endif  //FILEPTRMANAGER_H

@@ -1,4 +1,4 @@
-name: CMake SKSE Setup
+name: Build
 
 on:
   push:
@@ -8,8 +8,6 @@ on:
 
 env:
   PROJECT_NAME: Ammo_Patcher
-  PROJECT_VERSION: 2.0.0.1
-
 
 jobs:
   build:
@@ -19,37 +17,40 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
     - name: Setup C++ environment
       uses: aminya/setup-cpp@v1
       with:
         compiler: msvc
-        cmake: true
-        ninja: true
-        vcpkg: true
         vcvarsall: true
 
-    - name: Setup cmake
-      uses: lukka/get-cmake@latest
-
-    - name: Restore from cache and setup vcpkg executable and data files.
-      uses: lukka/run-vcpkg@v11
+    - uses: xmake-io/github-action-setup-xmake@v1
       with:
-        vcpkgJsonGlob: '${{ github.workspace }}/vcpkg.json'
+        xmake-version: latest
+        actions-cache-folder: '.xmake-cache'
 
-    - name: Configure and Run CMake Preset for "Debug" preset
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: 'debug-msvc'
-        buildPreset: 'build-debug-msvc'
+    - name: Extract version from xmake.lua
+      id: version
+      run: |
+        # Extract version from xmake.lua using PowerShell
+        $version = (Select-String -Path "xmake.lua" -Pattern 'set_version\("([^"]+)"\)').Matches[0].Groups[1].Value
+        echo "PROJECT_VERSION=$version" >> $env:GITHUB_ENV
+        echo "version=$version" >> $env:GITHUB_OUTPUT
 
-    - name: Configure and Run CMake Preset for "Release" preset
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: 'release-msvc'
-        buildPreset: 'build-release-msvc'
+    - name: Build releasedbg
+      run: xmake build Ammo_Patcher
 
-    - name: Deploy Aritfact
+    - name: Create 7z archive
+      run: |
+        # Create Artifact directory if it doesn't exist
+        mkdir -p contrib/Artifact
+        
+        # Create 7z archive from the Distribution folder
+        7z a -t7z -mx=9 "contrib/Artifact/${{ env.PROJECT_NAME }}_${{ env.PROJECT_VERSION }}.7z" "contrib/Distribution/*"
+
+    - name: Deploy Artifact
       uses: actions/upload-artifact@v4.3.3
       with:
         name: ${{ env.PROJECT_NAME }}_${{ env.PROJECT_VERSION }}

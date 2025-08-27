@@ -1,6 +1,5 @@
 #pragma once
 #include <algorithm>
-#include <codecvt>
 #include <format>
 #include <random>
 #include <RE/B/BSCoreTypes.h>
@@ -101,7 +100,14 @@ namespace Utils {
     }
 
     inline std::string wstringToString(const std::wstring& wstr) {
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        return converter.to_bytes(wstr);
+        if (wstr.empty()) return {};
+    int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, 
+                                         wstr.data(), (int)wstr.size(), 
+                                         nullptr, 0, nullptr, nullptr);
+    std::string str(sizeNeeded, 0);
+    WideCharToMultiByte(CP_UTF8, 0, 
+                        wstr.data(), (int)wstr.size(), 
+                        &str[0], sizeNeeded, nullptr, nullptr);
+    return str;
     }
 }  // namespace Utils
