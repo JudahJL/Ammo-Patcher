@@ -40,7 +40,7 @@ jobs:
         echo "version=$version" >> $env:GITHUB_OUTPUT
 
     - name: Build releasedbg
-      run: xmake build Ammo_Patcher
+      run: xmake build Ammo_Patcher -y
 
     - name: Create 7z archive
       run: |
