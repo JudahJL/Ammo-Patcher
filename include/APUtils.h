@@ -39,7 +39,7 @@ namespace Utils {
             if(delimiter != std::string::npos) {
                 const std::string_view modName{ identifier.substr(0, delimiter) };
                 const std::string_view modForm{ identifier.substr(delimiter + 1) };
-                uint32_t               formID{ static_cast<uint32_t>(std::stoul(modForm.data(), nullptr, 16)) };
+                uint32_t formID{ static_cast<uint32_t>(std::stoul(modForm.data(), nullptr, 16)) };
                 if(const auto* const mod{ dataHandler->LookupLoadedModByName(modName) }) {
                     if(mod->IsLight()) {
                         formID = formID & 0xF'FF;
@@ -81,15 +81,27 @@ namespace Utils {
     /**
 	 * \brief Creates a null-terminated std::array filled with a specified character.
 	 *
-	 * This function creates a `std::array` of size `N + 1` where the first `N` elements
-	 * are filled with `FillChar`, and the last element is set to `'\0'` to make the array
-	 * a null-terminated C-style string.
+
+
+     * * * This function creates a `std::array` of size `N + 1` where the first `N` elements
 	 *
-	 * \tparam N The size of the array excluding the null terminator.
+     * are
+     * filled with `FillChar`, and the last element is set to `'\0'` to make the array
+
+     * * a
+     * null-terminated C-style string.
+	 *
+	 * \tparam N The size of the array excluding
+     * the null
+     * terminator.
 	 * \tparam FillChar The character used to fill the array.
 	 *
-	 * \return A `std::array<char, N + 1>` with `N` elements filled with `FillChar` and
-	 *         a null terminator at the end.
+
+     * * \return A
+     * `std::array<char, N + 1>` with `N` elements filled with `FillChar` and
+
+     * *         a null
+     * terminator at the end.
 	 */
     template<std::size_t N, char FillChar>
     [[nodiscard]] constexpr auto make_filled_char_array() -> std::array<char, N + 1> {
@@ -100,14 +112,10 @@ namespace Utils {
     }
 
     inline std::string wstringToString(const std::wstring& wstr) {
-        if (wstr.empty()) return {};
-    int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, 
-                                         wstr.data(), (int)wstr.size(), 
-                                         nullptr, 0, nullptr, nullptr);
-    std::string str(sizeNeeded, 0);
-    WideCharToMultiByte(CP_UTF8, 0, 
-                        wstr.data(), (int)wstr.size(), 
-                        &str[0], sizeNeeded, nullptr, nullptr);
-    return str;
+        if(wstr.empty()) return {};
+        int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+        std::string str(sizeNeeded, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), &str[0], sizeNeeded, nullptr, nullptr);
+        return str;
     }
 }  // namespace Utils

@@ -6,7 +6,7 @@ includes ("lib/commonlibsse-ng")
 
 -- set project
 set_project("Ammo_Patcher")
-set_version("2.0.0")
+set_version("3.0.0")
 set_license("Apache-2.0")
 
 -- set defaults
@@ -33,6 +33,7 @@ target("Ammo_Patcher")
 
     -- add packages to target
     add_packages("rapidjson", "ctre")
+    add_defines("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE")
 
     -- add commonlibsse-ng plugin
     add_rules("commonlibsse-ng.plugin", {

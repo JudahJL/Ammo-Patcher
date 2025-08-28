@@ -21,4 +21,4 @@ private:
 
     static std::string_view extract_function_name(std::string_view full_signature);
 };
-#endif  //TIMEIT_H
+#endif  // TIMEIT_H

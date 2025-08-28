@@ -1,0 +1,7 @@
+{
+  "ccbgssse002-exoticarrows.esl": {
+    "records": {
+      "0x824": "whitelist" // Whitelists the actual telekinesis arrow (was previously unaffected, which was annoying)
+    }
+  }
+}

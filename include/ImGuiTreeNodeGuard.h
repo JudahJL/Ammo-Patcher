@@ -4,6 +4,7 @@
 
 #ifndef IMGUITREENODEGUARD_H
 #define IMGUITREENODEGUARD_H
+
 class ImGuiTreeNodeGuard
 {
 public:
@@ -25,4 +26,4 @@ public:
 private:
     bool result;
 };
-#endif  //IMGUITREENODEGUARD_H
+#endif  // IMGUITREENODEGUARD_H

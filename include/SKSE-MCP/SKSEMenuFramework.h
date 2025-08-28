@@ -87,32 +87,32 @@ namespace FontAwesome {
     }
 
     inline std::string UnicodeToUtf8(unsigned int cp) {
-    char buf[4];
-    int len = 0;
+        char buf[4];
+        int  len = 0;
 
-    // invalid code points → U+FFFD
-    if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
-        return "\xEF\xBF\xBD"; // U+FFFD
+        // invalid code points → U+FFFD
+        if(cp > 0x10'FF'FF || (cp >= 0xD8'00 && cp <= 0xDF'FF)) {
+            return "\xEF\xBF\xBD";  // U+FFFD
+        }
+
+        if(cp <= 0x7F) {
+            buf[len++] = static_cast<char>(cp);
+        } else if(cp <= 0x7'FF) {
+            buf[len++] = static_cast<char>(0xC0 | (cp >> 6));
+            buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
+        } else if(cp <= 0xFF'FF) {
+            buf[len++] = static_cast<char>(0xE0 | (cp >> 12));
+            buf[len++] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+            buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
+        } else {
+            buf[len++] = static_cast<char>(0xF0 | (cp >> 18));
+            buf[len++] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+            buf[len++] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+            buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
+        }
+
+        return std::string(buf, len);
     }
-
-    if (cp <= 0x7F) {
-        buf[len++] = static_cast<char>(cp);
-    } else if (cp <= 0x7FF) {
-        buf[len++] = static_cast<char>(0xC0 | (cp >> 6));
-        buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
-    } else if (cp <= 0xFFFF) {
-        buf[len++] = static_cast<char>(0xE0 | (cp >> 12));
-        buf[len++] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-        buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
-    } else {
-        buf[len++] = static_cast<char>(0xF0 | (cp >> 18));
-        buf[len++] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
-        buf[len++] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-        buf[len++] = static_cast<char>(0x80 | (cp & 0x3F));
-    }
-
-    return std::string(buf, len);
-}
 }  // namespace FontAwesome
 
 #pragma region Structs

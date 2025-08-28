@@ -3,11 +3,9 @@
 void InitializeLogging() {
     // ReSharper disable once CppLocalVariableMayBeConst
     auto path{ logger::log_directory() };
-
-    if(!path) {
-        SKSE::stl::report_and_fail("Unable to lookup SKSE logs directory.");
-    }
-    *path /= std::format("{}.log", SKSE::PluginDeclaration::GetSingleton()->GetName());
+    auto plugin = SKSE::PluginDeclaration::GetSingleton();
+    if(!path) { SKSE::stl::report_and_fail("Unable to lookup SKSE logs directory."); }
+    *path /= std::format("{}.log", plugin->GetName());
 
     auto  log{ std::make_shared<spdlog::logger>("Global") };
     auto& log_sinks{ log->sinks() };
@@ -25,4 +23,5 @@ void InitializeLogging() {
     log->set_level(spdlog::level::trace);
     log->flush_on(spdlog::level::off);
     spdlog::set_default_logger(std::move(log));
+    logger::info("{} v{} is loading...", plugin->GetName(), plugin->GetVersion().string("."));
 }

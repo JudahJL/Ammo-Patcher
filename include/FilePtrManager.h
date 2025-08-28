@@ -24,8 +24,7 @@ public:
         if(err != 0) {
             wchar_t buffer[2'048];
 
-            swprintf_s(buffer, std::size(buffer), L"Failed to open file '%ls' pointer. Error: %ls", path,
-                       _wcserror(err));
+            swprintf_s(buffer, std::size(buffer), L"Failed to open file '%ls' pointer. Error: %ls", path, _wcserror(err));
             SPDLOG_ERROR(buffer);
         }
     }
@@ -62,15 +61,17 @@ public:
         return *this;
     }
 
+    [[nodiscard]] operator FILE* () noexcept { return fp; }
+
+    [[nodiscard]] operator FILE* () const noexcept { return fp; }
+
     [[nodiscard]] FILE* get() noexcept { return fp; }
 
     [[nodiscard]] FILE* get() const noexcept { return fp; }
 
     [[nodiscard]] errno_t error() const noexcept { return err; }
 
-    [[nodiscard]] explicit operator bool () const noexcept {
-        return fp != nullptr && err == 0;
-    }
+    [[nodiscard]] explicit operator bool () const noexcept { return fp != nullptr && err == 0; }
 
 private:
     FILE*   fp{};
@@ -79,4 +80,4 @@ private:
 
 #pragma warning(pop)
 
-#endif  //FILEPTRMANAGER_H
+#endif  // FILEPTRMANAGER_H

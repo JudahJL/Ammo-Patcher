@@ -40,6 +40,10 @@ xmake repo --update
 xmake require --upgrade
 ```
 
+### Rules
+```
+Whitelist(ID) > Blacklist(ID) > Whitelist(File) > Blacklist(File)
+```
 ## License
 
 [MIT](LICENSE)

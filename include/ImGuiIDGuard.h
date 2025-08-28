@@ -4,6 +4,7 @@
 
 #ifndef IMGUIIDGUARD_H
 #define IMGUIIDGUARD_H
+
 class ImGuiIDGuard
 {
 public:
@@ -23,4 +24,4 @@ public:
     ImGuiIDGuard& operator= (const ImGuiIDGuard&) = delete;
     ImGuiIDGuard& operator= (ImGuiIDGuard&&)      = delete;
 };
-#endif //IMGUIIDGUARD_H
+#endif  // IMGUIIDGUARD_H

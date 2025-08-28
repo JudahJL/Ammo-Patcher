@@ -22,11 +22,7 @@ ImGuiTreeNodeGuard::ImGuiTreeNodeGuard(const void* ptr_id, const char* fmt, ...)
 }
 
 ImGuiTreeNodeGuard::~ImGuiTreeNodeGuard() noexcept {
-    if(result) {
-        ImGui::TreePop();
-    }
+    if(result) { ImGui::TreePop(); }
 }
 
-ImGuiTreeNodeGuard::operator bool () const noexcept {
-    return result;
-}
+ImGuiTreeNodeGuard::operator bool () const noexcept { return result; }

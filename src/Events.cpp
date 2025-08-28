@@ -20,7 +20,7 @@ void SKSEEvent::MessageListener(SKSE::MessagingInterface::Message* message) {
                 SKSE::stl::report_and_fail("CurrentFollowerFaction Can't be null, Something Went "
                                            "Wrong");
             }
-            Settings::GetSingleton().PopulateAmmoInfo().PopulateFormIDMapFromExclusions().Patch();
+            Settings::GetSingleton().PopulateAmmoInfo().Patch();
             break;
         case SKSE::MessagingInterface::kPostLoad: SMFRenderer::Register(); break;
         default:                                  break;

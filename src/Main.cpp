@@ -10,10 +10,11 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
     //     std::this_thread::sleep_for(wait_time);
     // }
     InitializeLogging();
-
-    [[maybe_unused]] const timeit t;
-    SKSE::Init(a_skse, false);
-    Settings::GetSingleton().LoadSchema().LoadPresets().SetLogAndFlushLevel().LoadExclusions();
-    SKSEEvent::InitializeMessaging();
+    {
+        [[maybe_unused]] const timeit t;
+        SKSE::Init(a_skse, false);
+        Settings::GetSingleton().PopulateFormIDMap().LoadSchema().LoadPresets().SetLogAndFlushLevel();
+        SKSEEvent::InitializeMessaging();
+    }
     return true;
 }

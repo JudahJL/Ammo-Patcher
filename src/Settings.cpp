@@ -12,9 +12,7 @@
 
 Settings Settings::Singleton;
 
-Settings& Settings::GetSingleton() {
-    return Singleton;
-}
+Settings& Settings::GetSingleton() { return Singleton; }
 
 Settings& Settings::LoadSchema() {
     constexpr auto schema_path{ "data/SKSE/Plugins/APConfig_schema.json" };
@@ -23,15 +21,18 @@ Settings& Settings::LoadSchema() {
         char                      readBuffer[65'535];
         rapidjson::Document       sd;
         rapidjson::FileReadStream bis(schema.get(), readBuffer, std::size(readBuffer));
-        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis); sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
+        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis);
+           sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
             SPDLOG_CRITICAL("Error(offset {}): {}", sd.GetErrorOffset(), rapidjson::GetParseError_En(sd.GetParseError()));
             SPDLOG_CRITICAL("Loading {} failed", schema_path);
-            SKSE::stl::report_and_fail("Please Check the Ammo_Patcher.log. Seems like there is a issue with loading APConfig_schema.json");
+            SKSE::stl::report_and_fail("Please Check the Ammo_Patcher.log. Seems like there is a "
+                                       "issue with loading APConfig_schema.json");
         }
         presetSchemaDocument = std::move(sd);
         SPDLOG_TRACE("Loaded Schema");
     } else {
-        SKSE::stl::report_and_fail("Please Check the Ammo_Patcher.log. Seems like there is a issue with loading APConfig_schema.json");
+        SKSE::stl::report_and_fail("Please Check the Ammo_Patcher.log. Seems like there is a issue "
+                                   "with loading APConfig_schema.json");
     }
     return *this;
 }
@@ -44,7 +45,8 @@ Settings& Settings::LoadPresets() {
     if(file) {
         rapidjson::Document       sd;
         rapidjson::FileReadStream bis(file.get(), readBuffer, std::size(readBuffer));
-        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis); sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) [[unlikely]] {
+        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis);
+           sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) [[unlikely]] {
             SPDLOG_ERROR("Error(offset {}): {}", sd.GetErrorOffset(), rapidjson::GetParseError_En(sd.GetParseError()));
             SPDLOG_ERROR("Loading {} failed", file_path);
         } else {
@@ -70,7 +72,8 @@ Settings& Settings::LoadPresets() {
                     memset(readBuffer, 0, std::size(readBuffer));
                     rapidjson::Document       sd;
                     rapidjson::FileReadStream bis(file.get(), readBuffer, std::size(readBuffer));
-                    if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis); sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
+                    if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis);
+                       sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
                         char buff[1'024];
                         sprintf_s(buff, std::size(buff), "File '%ls':Error(offset %zu): %s", path.c_str(), sd.GetErrorOffset(), rapidjson::GetParseError_En(sd.GetParseError()));
                         SPDLOG_ERROR(buff);
@@ -82,7 +85,7 @@ Settings& Settings::LoadPresets() {
                         SPDLOG_ERROR(buff);
                         rapidjson::StringBuffer sb;
                         rapidjson::PrettyWriter writer(sb);
-                        const auto              invalidSchemaPointer{ validator.GetInvalidSchemaPointer() };
+                        const auto invalidSchemaPointer{ validator.GetInvalidSchemaPointer() };
                         invalidSchemaPointer.StringifyUriFragment(sb);
                         SPDLOG_ERROR("Invalid schema: {}", sb.GetString());
                         SPDLOG_ERROR("Invalid keyword: {}", validator.GetInvalidSchemaKeyword());
@@ -117,34 +120,6 @@ Settings& Settings::LoadPresets() {
     return *this;
 }
 
-Settings& Settings::LoadExclusions() {
-    [[maybe_unused]] const timeit t;
-    // ReSharper disable once CppTooWideScope
-    char                          readBuffer[65'535];
-    constexpr auto                exclusions_path{ "data/SKSE/Plugins/Ammo Patcher/Exclusions/" };
-    if(fs::exists(exclusions_path) && !fs::is_empty(exclusions_path)) {
-        for(const auto& entry : std::filesystem::directory_iterator(exclusions_path)) {
-            const auto& path{ entry.path() };
-            if(path.extension() == ".json" && fs::is_regular_file(path)) {
-                if(const FilePtrManager file{ path.c_str() }) {
-                    memset(readBuffer, 0, std::size(readBuffer));
-                    rapidjson::Document       sd;
-                    rapidjson::FileReadStream bis(file.get(), readBuffer, std::size(readBuffer));
-                    if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis); sd.ParseStream<0, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
-                        char buff[2'048]{};
-
-                        sprintf_s(buff, std::size(buff), "File '%ls':Error(offset %zu): %hs", path.c_str(), sd.GetErrorOffset(), rapidjson::GetParseError_En(sd.GetParseError()));
-                        SPDLOG_ERROR(buff);
-                        continue;
-                    }
-                    exclusions.try_emplace(path, std::make_tuple(std::make_pair(std::unordered_map<std::string, std::int64_t>{}, std::int64_t{}), std::int64_t{}, std::move(sd)));
-                }
-            }
-        }
-    }
-    return *this;
-}
-
 inline std::string DiscardFormDigits(const std::string_view formID, const RE::TESFile* mod) {
     const std::size_t offset = (formID.starts_with("0x") || formID.starts_with("0X")) ? 2 : 0;
     const std::size_t length{ formID.length() - offset };
@@ -159,33 +134,23 @@ inline std::string DiscardFormDigits(const std::string_view formID, const RE::TE
 
 Settings& Settings::PopulateAmmoInfo() {
     for(const auto* const ammo : RE::TESDataHandler::GetSingleton()->GetFormArray<RE::TESAmmo>()) {
-        if(!ammo) {
-            continue;
-        }
+        if(!ammo) { continue; }
 
         const auto* const ammoProjectile{ ammo->GetRuntimeData().data.projectile };
-        if(!ammoProjectile) {
-            continue;
-        }
+        if(!ammoProjectile) { continue; }
 
-        if(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable) {
-            continue;
-        }
+        // if(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable) { continue; }
 
         const auto* const tes_file{ ammo->GetFile() };
         const auto        filename{ tes_file->GetFilename() };
         const RE::FormID  f{ ammo->GetRawFormID() & (tes_file->IsLight() ? 0xF'FF : 0xFF'FF'FF) };
-        std::snprintf(ammo_info_[filename.data()].emplace_back(
-                                                     ammo->GetRawFormID(),
-                                                     ammoProjectile->GetRawFormID(),
-                                                     ammo->GetFullName(),
-                                                     ammoProjectile->GetFullName(),
-                                                     ammo->GetRuntimeData().data.damage,
-                                                     ammoProjectile->data.gravity,
-                                                     ammoProjectile->data.speed,
-                                                     tes_file->IsLight())
-                          .AmmoFormIDShort,
-                      AmmoInfo::size, "0x%X", f);
+        std::snprintf(
+            ammo_info_[filename.data()]
+                .emplace_back(ammo->GetRawFormID(), ammoProjectile->GetRawFormID(), ammo->GetFullName(),
+                              ammoProjectile->GetFullName(), ammo->GetRuntimeData().data.damage,
+                              ammoProjectile->data.gravity, ammoProjectile->data.speed, tes_file->IsLight())
+                .AmmoFormIDShort,
+            AmmoInfo::size, "0x%X", f);
     }
     for(auto& item : ammo_info_ | std::views::values) {
         std::ranges::sort(item, {}, &AmmoInfo::AmmoFormID);
@@ -193,44 +158,91 @@ Settings& Settings::PopulateAmmoInfo() {
     return *this;
 }
 
-Settings& Settings::PopulateFormIDMapFromExclusions() {
-    auto* const datahandler{ RE::TESDataHandler::GetSingleton() };
+Settings::Rule ParseRule(const char* s) {
+    if(_stricmp(s, "whitelist") == 0) return Settings::Rule::kWhitelist;
+    if(_stricmp(s, "blacklist") == 0) return Settings::Rule::kBlacklist;
+    return Settings::Rule::kNone;
+}
+
+Settings& Settings::PopulateFormIDMap() {
     using ctre::literals::operator""_ctre;
+    constexpr auto FormID{ R"(^(0[xX])?[0-9A-Fa-f]{3,8}$)"_ctre };
+    constexpr auto file_path{ "data/SKSE/Plugins/AP_Rules.json" };
+    if(FilePtrManager file{ file_path }) {
+        char                      readBuffer[65'535];
+        rapidjson::Document       doc;
+        rapidjson::FileReadStream bis(file, readBuffer, std::size(readBuffer));
+        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis);
+           doc.ParseStream < rapidjson::kParseCommentsFlag | rapidjson::kParseStopWhenDoneFlag | rapidjson::kParseTrailingCommasFlag,
+           rapidjson::AutoUTF < unsigned >> (eis).HasParseError()) [[unlikely]] {
+            SPDLOG_ERROR("Error(offset {}): {}", doc.GetErrorOffset(), rapidjson::GetParseError_En(doc.GetParseError()));
+            SPDLOG_ERROR("Loading {} failed", file_path);
+        } else {
+            if(!doc.IsObject()) {
+                SPDLOG_ERROR("Root of JSON must be an object");
+                return *this;
+            }
 
-    for(const auto& exclusion_json : exclusions | std::views::values | std::views::elements<2>) {
-        auto       files_to_exclude{ exclusion_json.FindMember("Mod File(s) to Exclude") };
-        auto       formID_to_exclude{ exclusion_json.FindMember("AMMO FormID to Exclude") };
-        const auto end{ exclusion_json.MemberEnd() };
+            for(auto itr = doc.MemberBegin(); itr != doc.MemberEnd(); ++itr) {
+                std::string fileName = itr->name.GetString();
+                const auto& entry    = itr->value;
 
-        if(formID_to_exclude != end) {
-            for(const auto& kv_pair : formID_to_exclude->value.GetObject()) {
-                const char* filename{ kv_pair.name.GetString() };
-                if(const RE::TESFile * modfile{ datahandler->LookupModByName(filename) }) {
-                    constexpr auto FormID{ R"(^(0[xX])?[0-9A-Fa-f]{3,8}$)"_ctre };
-                    for(const auto& formid : kv_pair.value.GetArray()) {
-                        if(FormID.match(formid.GetString())) {
-                            std::string formID{ DiscardFormDigits(formid.GetString(), modfile) };
-                            uint32_t    hexnumber;
-                            sscanf_s(formID.data(), "%x", &hexnumber);
-                            const auto ammo_form{ datahandler->LookupForm<RE::TESAmmo>(hexnumber, filename) };
-                            if(!ammo_form) {
-                                continue;
-                            }
-                            form_id_map[filename].first.insert(ammo_form->GetRawFormID());
+                FileRule rules;
+
+                // Global rule
+                if(auto it = entry.FindMember("global"); it != entry.MemberEnd() && it->value.IsString()) {
+                    rules.global = ParseRule(it->value.GetString());
+                }
+
+                // Per-record rules
+                if(auto it = entry.FindMember("records"); it != entry.MemberEnd() && it->value.IsObject()) {
+                    for(auto rec = it->value.MemberBegin(); rec != it->value.MemberEnd(); ++rec) {
+                        std::string_view id_str = rec->name.GetString();
+
+                        if(!FormID.match(id_str)) {
+                            SPDLOG_WARN("Invalid FormID '{}' in '{}'", id_str, fileName);
+                            continue;
+                        }
+
+                        RE::FormID id = 0;
+                        if(sscanf_s(id_str.data(), "%x", &id) != 1) {
+                            SPDLOG_WARN("Failed to parse FormID '{}' in '{}'", id_str, fileName);
+                            continue;
+                        }
+
+                        if(rec->value.IsString()) {
+                            rules.per_id[id] = ParseRule(rec->value.GetString());
                         }
                     }
                 }
-            }
-        }
-        if(files_to_exclude != end) {
-            for(const auto& filename : files_to_exclude->value.GetArray()) {
-                if(datahandler->LookupModByName(filename.GetString())) {
-                    form_id_map[filename.GetString()].second = true;
-                }
+
+                form_id_map.try_emplace(std::move(fileName), std::move(rules));
             }
         }
     }
     return *this;
+}
+
+std::optional<bool> Settings::IsAllowed(const std::string& file, RE::FormID id) {
+    auto it = form_id_map.find(file);
+    if(it == form_id_map.end()) return std::nullopt;  // no rules for this file at all
+
+    const FileRule& rules = it->second;
+
+    // 1. Per-ID rules first
+    if(auto f = rules.per_id.find(id); f != rules.per_id.end()) {
+        if(f->second == Rule::kWhitelist) return true;
+        if(f->second == Rule::kBlacklist) return false;
+    }
+
+    // 2. Global file rule
+    if(rules.global.has_value()) {
+        if(*rules.global == Rule::kWhitelist) return true;
+        if(*rules.global == Rule::kBlacklist) return false;
+    }
+
+    // 3. No decision → use default behavior
+    return std::nullopt;
 }
 
 Settings& Settings::Patch() {
@@ -241,32 +253,32 @@ Settings& Settings::Patch() {
     SPDLOG_INFO("Selected Preset: {}", Utils::wstringToString(curr_preset));
 
     constexpr std::array JsonKeys{
-        "AMMO",                //00
-        "Arrow",               //01
-        "Bolt",                //02
-        "Sound",               //03
-        "Change Sound Level",  //04
-        "Enable",              //05
-        "Sound Level",         //06
-        "Change Speed",        //07
-        "Change Gravity",      //08
-        "Gravity",             //09
-        "Speed",               //10
-        "Limit Speed",         //11
-        "Limit Damage",        //12
-        "Min",                 //13
-        "Max",                 //14
-        "kLoud",               //15
-        "kNormal",             //16
-        "kSilent",             //17
-        "kVeryLoud",           //18
-        "kQuiet",              //19
-        "Infinite AMMO",       //20
-        "Enable Arrow Patch",  //21
-        "Enable Bolt Patch",   //22
-        "Player",              //23
-        "Teammate",            //24
-        "Randomize Speed"      //25
+        "AMMO",                // 00
+        "Arrow",               // 01
+        "Bolt",                // 02
+        "Sound",               // 03
+        "Change Sound Level",  // 04
+        "Enable",              // 05
+        "Sound Level",         // 06
+        "Change Speed",        // 07
+        "Change Gravity",      // 08
+        "Gravity",             // 09
+        "Speed",               // 10
+        "Limit Speed",         // 11
+        "Limit Damage",        // 12
+        "Min",                 // 13
+        "Max",                 // 14
+        "kLoud",               // 15
+        "kNormal",             // 16
+        "kSilent",             // 17
+        "kVeryLoud",           // 18
+        "kQuiet",              // 19
+        "Infinite AMMO",       // 20
+        "Enable Arrow Patch",  // 21
+        "Enable Bolt Patch",   // 22
+        "Player",              // 23
+        "Teammate",            // 24
+        "Randomize Speed"      // 25
     };
 
     const auto& AMMO         = main_json[JsonKeys.at(0)];
@@ -299,7 +311,7 @@ Settings& Settings::Patch() {
     const auto infinite_player_ammo_   = InfiniteAMMO[JsonKeys.at(23)].GetBool();
     const auto infinite_teammate_ammo_ = InfiniteAMMO[JsonKeys.at(24)].GetBool();
 
-    //Enable
+    // Enable
     constexpr auto Enable{ 5 };
     const auto     arrow_speed_enable_       = AChangeSpeed[JsonKeys.at(Enable)].GetBool();
     const auto     bolt_speed_enable_        = BChangeSpeed[JsonKeys.at(Enable)].GetBool();
@@ -314,7 +326,7 @@ Settings& Settings::Patch() {
     const auto     randomize_arrow_speed_    = ARandomizeSpeed[JsonKeys.at(Enable)].GetBool();
     const auto     randomize_bolt_speed_     = BRandomizeSpeed[JsonKeys.at(Enable)].GetBool();
 
-    //Min
+    // Min
     constexpr auto Min{ 13 };
     const auto     arrow_damage_limiter_min_   = ALimitDamage[JsonKeys.at(Min)].GetFloat();
     const auto     bolt_damage_limiter_min_    = BLimitDamage[JsonKeys.at(Min)].GetFloat();
@@ -323,7 +335,7 @@ Settings& Settings::Patch() {
     const auto     arrow_speed_randomizer_min_ = ARandomizeSpeed[JsonKeys.at(Min)].GetFloat();
     const auto     bolt_speed_randomizer_min_  = BRandomizeSpeed[JsonKeys.at(Min)].GetFloat();
 
-    //Max
+    // Max
     constexpr auto Max{ 14 };
     const auto     arrow_damage_limiter_max_   = ALimitDamage[JsonKeys.at(Max)].GetFloat();
     const auto     bolt_damage_limiter_max_    = BLimitDamage[JsonKeys.at(Max)].GetFloat();
@@ -332,48 +344,60 @@ Settings& Settings::Patch() {
     const auto     arrow_speed_randomizer_max_ = ARandomizeSpeed[JsonKeys.at(Max)].GetFloat();
     const auto     bolt_speed_randomizer_max_  = BRandomizeSpeed[JsonKeys.at(Max)].GetFloat();
 
-    //Speed
+    // Speed
     constexpr auto Speed{ 10 };
     const auto     arrow_speed_ = AChangeSpeed[JsonKeys.at(Speed)].GetFloat();
     const auto     bolt_speed_  = BChangeSpeed[JsonKeys.at(Speed)].GetFloat();
 
-    //Gravity
+    // Gravity
     constexpr auto Gravity{ 9 };
     const auto     arrow_gravity_ = AChangeGravity[JsonKeys.at(Gravity)].GetFloat();
     const auto     bolt_gravity_  = BChangeGravity[JsonKeys.at(Gravity)].GetFloat();
 
-    //Sound Level
+    // Sound Level
     constexpr auto SoundLevel{ 6 };
     const auto     arrow_sound_level_str_ = AChangeSoundLevel[JsonKeys.at(SoundLevel)].GetString();
     const auto     bolt_sound_level_str_  = BChangeSoundLevel[JsonKeys.at(SoundLevel)].GetString();
 
     if(arrow_speed_limiter_min_ > arrow_speed_limiter_max_) {
-        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Arrow Speed Min is lesser than or Equal to Arrow Speed Max.\nThis is ignorable but not expected or proper(i.e., it will still work)" };
+        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Arrow Speed Min is lesser "
+                                     "than or Equal to Arrow Speed Max.\nThis is ignorable but not "
+                                     "expected or proper(i.e., it will still work)" };
         SPDLOG_WARN("{}", ErrorMessage);
     }
 
     if(bolt_speed_limiter_min_ > bolt_speed_limiter_max_) {
-        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Bolt Speed Min is lesser than or Equal to Bolt Speed Max.\nThis is ignorable but not expected or proper(i.e., it will still work)" };
+        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Bolt Speed Min is lesser "
+                                     "than or Equal to Bolt Speed Max.\nThis is ignorable but not "
+                                     "expected or proper(i.e., it will still work)" };
         SPDLOG_WARN("{}", ErrorMessage);
     }
 
     if(arrow_damage_limiter_min_ > arrow_damage_limiter_max_) {
-        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Arrow Damage Min is lesser than or Equal to Arrow Damage Max.\nThis is ignorable but not expected or proper(i.e., it will still work)" };
+        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Arrow Damage Min is lesser "
+                                     "than or Equal to Arrow Damage Max.\nThis is ignorable but "
+                                     "not expected or proper(i.e., it will still work)" };
         SPDLOG_WARN("{}", ErrorMessage);
     }
 
     if(bolt_damage_limiter_min_ > bolt_damage_limiter_max_) {
-        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Bolt Damage Min is lesser than or Equal to Bolt Damage Max.\nThis is ignorable but not expected or proper(i.e., it will still work)" };
+        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Bolt Damage Min is lesser "
+                                     "than or Equal to Bolt Damage Max.\nThis is ignorable but not "
+                                     "expected or proper(i.e., it will still work)" };
         SPDLOG_WARN("{}", ErrorMessage);
     }
 
     if(arrow_speed_randomizer_min_ > arrow_speed_randomizer_max_) {
-        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Arrow Randomizer Min is lesser than or Equal to Arrow Randomizer Max.\nPlease Don't ignore this Warning. The Game will Crash" };
+        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Arrow Randomizer Min is "
+                                     "lesser than or Equal to Arrow Randomizer Max.\nPlease Don't "
+                                     "ignore this Warning. The Game will Crash" };
         SPDLOG_CRITICAL("{}", ErrorMessage);
     }
 
     if(arrow_speed_randomizer_min_ > arrow_speed_randomizer_max_) {
-        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Bolt Randomizer Min is lesser than or Equal to Bolt Randomizer Max.\nPlease Don't ignore this Warning. The Game will Crash" };
+        constexpr auto ErrorMessage{ "Error Detected in Json. Make Sure Bolt Randomizer Min is "
+                                     "lesser than or Equal to Bolt Randomizer Max.\nPlease Don't "
+                                     "ignore this Warning. The Game will Crash" };
         SPDLOG_CRITICAL("{}", ErrorMessage);
     }
 
@@ -395,153 +419,160 @@ Settings& Settings::Patch() {
     auto arrow_sound_level_{ RE::SOUND_LEVEL::kSilent };
     auto bolt_sound_level_{ RE::SOUND_LEVEL::kSilent };
 
-    if(const auto iterator{ AmmoSoundLevelMap.find(arrow_sound_level_str_) }; iterator != AmmoSoundLevelMap.end()) {
+    if(const auto iterator{ AmmoSoundLevelMap.find(arrow_sound_level_str_) };
+       iterator != AmmoSoundLevelMap.end()) {
         arrow_sound_level_ = iterator->second;
     } else {
-        SPDLOG_ERROR("Invalid Arrow Sound Level specified in the JSON file. Not Patching Arrow Sound Level.");
+        SPDLOG_ERROR("Invalid Arrow Sound Level specified in the JSON file. Not Patching Arrow "
+                     "Sound Level.");
         change_arrow_sound_level_ = false;
     }
 
-    if(const auto iterator{ AmmoSoundLevelMap.find(bolt_sound_level_str_) }; iterator != AmmoSoundLevelMap.end()) {
+    if(const auto iterator{ AmmoSoundLevelMap.find(bolt_sound_level_str_) };
+       iterator != AmmoSoundLevelMap.end()) {
         bolt_sound_level_ = iterator->second;
     } else {
-        SPDLOG_ERROR("Invalid Bolt Sound Level specified in the JSON file. Not Patching Bolt Sound Level.");
+        SPDLOG_ERROR("Invalid Bolt Sound Level specified in the JSON file. Not Patching Bolt Sound "
+                     "Level.");
         change_bolt_sound_level_ = false;
     }
-    SPDLOG_INFO("{} {} is starting to patch", SKSE::PluginDeclaration::GetSingleton()->GetName(), SKSE::PluginDeclaration::GetSingleton()->GetVersion().string("."));
+    SPDLOG_INFO("{} {} is starting to patch", SKSE::PluginDeclaration::GetSingleton()->GetName(),
+                SKSE::PluginDeclaration::GetSingleton()->GetVersion().string("."));
 
     for(auto* const ammo : RE::TESDataHandler::GetSingleton()->GetFormArray<RE::TESAmmo>()) {
-        if(!ammo) {
-            continue;
-        }
+        if(!ammo) { continue; }
 
         auto* const ammoProjectile = ammo->GetRuntimeData().data.projectile;
         if(!ammoProjectile) {
-            SPDLOG_INFO("PROJ Record with Name '{}' with FormID '{:08X}' from file '{}' is nullptr i.e., NULL", ammo->GetFullName(), ammo->GetRawFormID(), ammo->GetFile()->GetFilename());
+            SPDLOG_INFO("PROJ Record with Name '{}' with FormID '{:08X}' from file '{}' is nullptr "
+                        "i.e., NULL",
+                        ammo->GetFullName(), ammo->GetRawFormID(), ammo->GetFile()->GetFilename());
             continue;
         }
 
         if(arrow_patch_ || bolt_patch_) {
-            // for(const auto& ammoModName : form_id_map) {
-            //     if(ammoModName == ammo->GetFile()->GetFilename()) {
-            //         shouldPatch = false;
-            //         SPDLOG_DEBUG("{}", starString.data());
-            //         SPDLOG_DEBUG("From {} :", ammoModName.data());
-            //         SPDLOG_DEBUG("Skipping Ammo : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}", ammo->GetFullName(), ammo->GetRawFormID(),
-            //                      ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity);
-            //         SPDLOG_DEBUG("{}", starString.data());
-            //         break;
-            //     }
-            // }
-
+            auto isAllowed = IsAllowed(ammo->GetFile()->GetFilename().data(), ammo->GetLocalFormID());
             constexpr auto starString{ Utils::make_filled_char_array<125, '*'>() };
-            if(!form_id_map.empty()) {
-                if(const auto itr{ form_id_map.find(ammo->GetFile()->GetFilename().data()) }; itr != form_id_map.end()) {
-                    const auto& [formIDs, blacklistFile]{ itr->second };
-                    if(blacklistFile || formIDs.contains(ammo->GetRawFormID())) {
-                        SPDLOG_DEBUG("{}", starString.data());
-                        SPDLOG_DEBUG("Skipping Ammo : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}", ammo->GetFullName(), ammo->GetRawFormID(),
-                                     ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity);
-                        SPDLOG_DEBUG("{}", starString.data());
-                        continue;
+            if(isAllowed.has_value()) {
+                if(*isAllowed == false) {  // blacklisted
+                    SPDLOG_DEBUG("{}", starString.data());
+                    SPDLOG_DEBUG("Skipping Ammo : Name:{}|FormID:{:08X}|Damage:{}|Projectile "
+                                 "Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile "
+                                 "Gravity:{}",
+                                 ammo->GetFullName(), ammo->GetRawFormID(),
+                                 ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(),
+                                 ammoProjectile->GetRawFormID(), ammoProjectile->data.speed,
+                                 ammoProjectile->data.gravity);
+                    SPDLOG_DEBUG("{}", starString.data());
+                    continue;
+                }
+                // whitelisted
+                SPDLOG_DEBUG("{}", starString.data());
+                SPDLOG_DEBUG("Whitelisted Ammo : Name:{}|FormID:{:08X}|Damage:{}|Projectile "
+                             "Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile "
+                             "Gravity:{}",
+                             ammo->GetFullName(), ammo->GetRawFormID(), ammo->GetRuntimeData().data.damage,
+                             ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(),
+                             ammoProjectile->data.speed, ammoProjectile->data.gravity);
+                SPDLOG_DEBUG("{}", starString.data());
+            } else {
+                // transparent: fallback to normal rule
+                if(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable) {
+                    continue;
+                }
+            }
+
+            const bool ammoPatched{ arrow_speed_enable_ || bolt_speed_enable_ || arrow_gravity_enable_ || bolt_gravity_enable_ || limit_arrow_speed_ || limit_bolt_speed_ || limit_arrow_damage_ || limit_bolt_damage_ || change_arrow_sound_level_ || change_bolt_sound_level_ || randomize_arrow_speed_ || randomize_bolt_speed_ };
+            if(ammoPatched) {
+                patched++;
+                SPDLOG_DEBUG("{}", starString.data());
+                SPDLOG_DEBUG("Before Patching : Name:{}|FormID:{:08X}|Damage:{}|Projectile "
+                             "Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile "
+                             "Gravity:{}|File:{}",
+                             ammo->GetFullName(), ammo->GetRawFormID(), ammo->GetRuntimeData().data.damage,
+                             ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(),
+                             ammoProjectile->data.speed, ammoProjectile->data.gravity,
+                             ammo->GetFile()->GetFilename());
+            }
+
+            if(ammo->GetRuntimeData().data.flags.all(RE::AMMO_DATA::Flag::kNonBolt)) {  // for
+                                                                                        // arrow
+                if(arrow_patch_) {
+                    if(change_arrow_sound_level_) {
+                        ammoProjectile->soundLevel = arrow_sound_level_;
+                        SPDLOG_DEBUG("changed Arrow Sound Level");
+                    }
+                    if(arrow_speed_enable_) {
+                        ammoProjectile->data.speed = arrow_speed_;
+                        SPDLOG_DEBUG("Changed Arrow Speed");
+                    }
+                    if(arrow_gravity_enable_) {
+                        ammoProjectile->data.gravity = arrow_gravity_;
+                        SPDLOG_DEBUG("Changed Arrow Gravity");
+                    }
+                    if(limit_arrow_damage_) {
+                        Utils::limit(ammo->GetRuntimeData().data.damage, arrow_damage_limiter_min_, arrow_damage_limiter_max_);
+                        SPDLOG_DEBUG("Limited Arrow Damage");
+                    }
+                    if(limit_arrow_speed_) {
+                        Utils::limit(ammoProjectile->data.speed, arrow_speed_limiter_min_, arrow_speed_limiter_max_);
+                        SPDLOG_DEBUG("Limited Arrow Level");
+                    }
+                    if(randomize_arrow_speed_) {
+                        float value = Utils::getRandom(arrow_speed_randomizer_min_, arrow_speed_randomizer_max_);
+                        ammoProjectile->data.speed = value;
+                        SPDLOG_DEBUG("Randomized Arrow Speed to {}", value);
                     }
                 }
             }
 
-            if(!(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable)) {
-                const bool ammoPatched{ arrow_speed_enable_ ||
-                                        bolt_speed_enable_ ||
-                                        arrow_gravity_enable_ ||
-                                        bolt_gravity_enable_ ||
-                                        limit_arrow_speed_ ||
-                                        limit_bolt_speed_ ||
-                                        limit_arrow_damage_ ||
-                                        limit_bolt_damage_ ||
-                                        change_arrow_sound_level_ ||
-                                        change_bolt_sound_level_ ||
-                                        randomize_arrow_speed_ ||
-                                        randomize_bolt_speed_ };
-                if(ammoPatched) {
-                    patched++;
-                    SPDLOG_DEBUG("{}", starString.data());
-                    SPDLOG_DEBUG("Before Patching : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}|File:{}", ammo->GetFullName(), ammo->GetRawFormID(),
-                                 ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity, ammo->GetFile()->GetFilename());
-                }
-
-                if(ammo->GetRuntimeData().data.flags.all(RE::AMMO_DATA::Flag::kNonBolt)) {  // for arrow
-                    if(arrow_patch_) {
-                        if(change_arrow_sound_level_) {
-                            ammoProjectile->soundLevel = arrow_sound_level_;
-                            SPDLOG_DEBUG("changed Arrow Sound Level");
-                        }
-                        if(arrow_speed_enable_) {
-                            ammoProjectile->data.speed = arrow_speed_;
-                            SPDLOG_DEBUG("Changed Arrow Speed");
-                        }
-                        if(arrow_gravity_enable_) {
-                            ammoProjectile->data.gravity = arrow_gravity_;
-                            SPDLOG_DEBUG("Changed Arrow Gravity");
-                        }
-                        if(limit_arrow_damage_) {
-                            Utils::limit(ammo->GetRuntimeData().data.damage, arrow_damage_limiter_min_, arrow_damage_limiter_max_);
-                            SPDLOG_DEBUG("Limited Arrow Damage");
-                        }
-                        if(limit_arrow_speed_) {
-                            Utils::limit(ammoProjectile->data.speed, arrow_speed_limiter_min_, arrow_speed_limiter_max_);
-                            SPDLOG_DEBUG("Limited Arrow Level");
-                        }
-                        if(randomize_arrow_speed_) {
-                            float value                = Utils::getRandom(arrow_speed_randomizer_min_, arrow_speed_randomizer_max_);
-                            ammoProjectile->data.speed = value;
-                            SPDLOG_DEBUG("Randomized Arrow Speed to {}", value);
-                        }
+            if(ammo->GetRuntimeData().data.flags.none(RE::AMMO_DATA::Flag::kNonBolt)) {  // for
+                                                                                         // bolt
+                if(bolt_patch_) {
+                    if(change_bolt_sound_level_) {
+                        ammoProjectile->soundLevel = bolt_sound_level_;
+                        SPDLOG_DEBUG("changed Bolt Sound Level");
                     }
-                }
-
-                if(ammo->GetRuntimeData().data.flags.none(RE::AMMO_DATA::Flag::kNonBolt)) {  // for bolt
-                    if(bolt_patch_) {
-                        if(change_bolt_sound_level_) {
-                            ammoProjectile->soundLevel = bolt_sound_level_;
-                            SPDLOG_DEBUG("changed Bolt Sound Level");
-                        }
-                        if(bolt_speed_enable_) {
-                            ammoProjectile->data.speed = bolt_speed_;
-                            SPDLOG_DEBUG("Changed Bolt Speed");
-                        }
-                        if(bolt_gravity_enable_) {
-                            ammoProjectile->data.gravity = bolt_gravity_;
-                            SPDLOG_DEBUG("Changed Bolt Speed");
-                        }
-                        if(limit_bolt_speed_) {
-                            Utils::limit(ammoProjectile->data.speed, bolt_speed_limiter_min_, bolt_speed_limiter_max_);
-                            SPDLOG_DEBUG("Limited Bolt Speed");
-                        }
-                        if(randomize_arrow_speed_) {
-                            float value                = Utils::getRandom(bolt_speed_randomizer_min_, bolt_speed_randomizer_max_);
-                            ammoProjectile->data.speed = value;
-                            SPDLOG_DEBUG("Randomized Bolt Speed to {}", value);
-                        }
-                        if(limit_bolt_damage_) {
-                            Utils::limit(ammo->GetRuntimeData().data.damage, bolt_damage_limiter_min_, bolt_damage_limiter_max_);
-                            SPDLOG_DEBUG("Limited Bolt Damage");
-                        }
+                    if(bolt_speed_enable_) {
+                        ammoProjectile->data.speed = bolt_speed_;
+                        SPDLOG_DEBUG("Changed Bolt Speed");
                     }
-                }
-
-                if(ammoPatched) {
-                    SPDLOG_DEBUG("After Patching : Name:{}|FormID:{:08X}|Damage:{}|Projectile Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile Gravity:{}|File:{}", ammo->GetFullName(), ammo->GetRawFormID(),
-                                 ammo->GetRuntimeData().data.damage, ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(), ammoProjectile->data.speed, ammoProjectile->data.gravity, ammo->GetFile()->GetFilename());
-                    SPDLOG_DEBUG("{}", starString.data());
+                    if(bolt_gravity_enable_) {
+                        ammoProjectile->data.gravity = bolt_gravity_;
+                        SPDLOG_DEBUG("Changed Bolt Speed");
+                    }
+                    if(limit_bolt_speed_) {
+                        Utils::limit(ammoProjectile->data.speed, bolt_speed_limiter_min_, bolt_speed_limiter_max_);
+                        SPDLOG_DEBUG("Limited Bolt Speed");
+                    }
+                    if(randomize_arrow_speed_) {
+                        float value = Utils::getRandom(bolt_speed_randomizer_min_, bolt_speed_randomizer_max_);
+                        ammoProjectile->data.speed = value;
+                        SPDLOG_DEBUG("Randomized Bolt Speed to {}", value);
+                    }
+                    if(limit_bolt_damage_) {
+                        Utils::limit(ammo->GetRuntimeData().data.damage, bolt_damage_limiter_min_, bolt_damage_limiter_max_);
+                        SPDLOG_DEBUG("Limited Bolt Damage");
+                    }
                 }
             }
+
+            if(ammoPatched) {
+                SPDLOG_DEBUG("After Patching : Name:{}|FormID:{:08X}|Damage:{}|Projectile "
+                             "Name:{}|Projectile FormID:{:08X}|Projectile Speed:{}|Projectile "
+                             "Gravity:{}|File:{}",
+                             ammo->GetFullName(), ammo->GetRawFormID(), ammo->GetRuntimeData().data.damage,
+                             ammoProjectile->GetFullName(), ammoProjectile->GetRawFormID(),
+                             ammoProjectile->data.speed, ammoProjectile->data.gravity,
+                             ammo->GetFile()->GetFilename());
+                SPDLOG_DEBUG("{}", starString.data());
+            }
+        } else {
+            break;
         }
     }
-    SPDLOG_INFO("{} {} has finished Patching {} records", SKSE::PluginDeclaration::GetSingleton()->GetName(), SKSE::PluginDeclaration::GetSingleton()->GetVersion().string("."), patched);
-    return *this;
-}
-
-Settings& Settings::Clear() {
-    form_id_map.clear();
+    SPDLOG_INFO("{} {} has finished Patching {} records", SKSE::PluginDeclaration::GetSingleton()->GetName(),
+                SKSE::PluginDeclaration::GetSingleton()->GetVersion().string("."), patched);
     return *this;
 }
 
@@ -549,33 +580,27 @@ Settings& Settings::SetLogAndFlushLevel() {
     const auto level = spdlog::level::from_str(presets[curr_preset]["Logging"]["LogLevel"].GetString());
     spdlog::set_level(level);
     spdlog::flush_on(level);
-    spdlog::default_logger()->flush(); // initially set was flush to off. now flush everything since we got the loglevel
+    spdlog::default_logger()->flush();  // initially set was flush to off. now flush everything
+                                        // since we got the loglevel
     SPDLOG_DEBUG("LogLevel: {}", spdlog::level::to_string_view(level));
     return *this;
 }
 
 Settings& Settings::RevertToDefault() {
     [[maybe_unused]] const timeit t;
-    std::size_t reverted{};
+    std::size_t                   reverted{};
     for(auto* const ammo : RE::TESDataHandler::GetSingleton()->GetFormArray<RE::TESAmmo>()) {
-        if(!ammo) {
-            continue;
-        }
+        if(!ammo) { continue; }
 
         auto* const ammoProjectile{ ammo->GetRuntimeData().data.projectile };
-        if(!ammoProjectile) {
-            continue;
-        }
+        if(!ammoProjectile) { continue; }
 
-        if(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable) {
-            continue;
-        }
+        if(ammo->GetRuntimeData().data.flags & RE::AMMO_DATA::Flag::kNonPlayable) { continue; }
         const auto* const tes_file{ ammo->GetFile() };
         const auto        filename{ tes_file->GetFilename() };
         const auto&       ammo_info_vec = ammo_info_[filename.data()];
 
-        if(auto it = std::ranges::lower_bound(ammo_info_vec, ammo->GetRawFormID(),
-                                              {}, &AmmoInfo::AmmoFormID);
+        if(auto it = std::ranges::lower_bound(ammo_info_vec, ammo->GetRawFormID(), {}, &AmmoInfo::AmmoFormID);
            it != ammo_info_vec.end() && it->AmmoFormID == ammo->GetRawFormID()) {
             reverted++;
             ammo->GetRuntimeData().data.damage = it->damage;
@@ -587,8 +612,6 @@ Settings& Settings::RevertToDefault() {
     return *this;
 }
 
-const Settings::AmmoInfoType& Settings::GetAmmoInfo() {
-    return ammo_info_;
-}
+const Settings::AmmoInfoType& Settings::GetAmmoInfo() { return ammo_info_; }
 
 #pragma pop_macro("GetObject")

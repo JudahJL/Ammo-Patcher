@@ -17,7 +17,6 @@ class SMFRenderer
 public:
     static SMFRenderer& GetSingleton();
     static void __stdcall Register();
-    static void __stdcall RenderExclusions();
 #ifndef NDEBUG
     static void __stdcall RenderDebug();
 #endif
