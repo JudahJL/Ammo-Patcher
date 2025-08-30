@@ -49,10 +49,15 @@ jobs:
     - name: Create 7z archive
       run: |
         # Create Artifact directory if it doesn't exist
-        mkdir -p contrib/Artifact
+        New-Item -ItemType Directory -Force -Path "contrib/Artifact"
         
-        # Create 7z archive from the Distribution folder
-        7z a -t7z -mx=9 "contrib/Artifact/${{ env.PROJECT_NAME }}_${{ env.PROJECT_VERSION }}.7z" "contrib/Distribution/*"
+        # Change to contrib/Distribution directory and create 7z archive from there
+        # This makes Distribution the root of the archive
+        cd contrib/Distribution
+        7z a -t7z -mx=9 "../Artifact/${{ env.PROJECT_NAME }}_${{ env.PROJECT_VERSION }}.7z" "*"
+        
+        # Return to base directory for subsequent steps
+        cd ../..
 
     - name: Deploy Artifact
       uses: actions/upload-artifact@v4.3.3

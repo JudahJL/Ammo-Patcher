@@ -6,7 +6,7 @@
         ["cmake#31fecfc4"] = {
             repo = {
                 branch = "master",
-                commit = "3bc3e63faf923ebd27e0ef7d12c30231d476815f",
+                commit = "a8169020954a713b21f934c6b54b2a0eec5ff088",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "3.31.6-msvc6"
@@ -38,7 +38,7 @@
         ["ninja#31fecfc4"] = {
             repo = {
                 branch = "master",
-                commit = "3bc3e63faf923ebd27e0ef7d12c30231d476815f",
+                commit = "a8169020954a713b21f934c6b54b2a0eec5ff088",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "1.12.1"
@@ -46,10 +46,10 @@
         ["rapidcsv#31fecfc4"] = {
             repo = {
                 branch = "master",
-                commit = "d3bd448ef7ae3b0f92345bbead2cc9652d22b3b6",
+                commit = "a8169020954a713b21f934c6b54b2a0eec5ff088",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
-            version = "v8.87"
+            version = "v8.88"
         },
         ["rapidjson#31fecfc4"] = {
             repo = {
