@@ -24,21 +24,21 @@ Use Git GUI or At the Directory of your choice, open terminal (or) cmd (or) Powe
 git clone https://github.com/JudahJL/Ammo-Patcher.git
 ```
 
-## Extra
-- It is Adviced to add "VsDevCmd.bat" from Visual Studio to your Terminal (or) IDE to execute automatically to avoid cmake errors like the one mentioned below.This was a HUGE Headache for me. If you want to know more about "VsDevCmd.bat", Google is your Friend.
-```
-  The CMAKE_CXX_COMPILER:
-
-    cl.exe
-
-  is not a full path and was not found in the PATH.
-``` 
 ### Upgrading Packages (Optional)
 If you want to upgrade the project's dependencies, run the following commands:
 ```bat
 xmake repo --update
 xmake require --upgrade
 ```
+
+### To Format
+```
+clang-format -i .\include\*.h .\src\*.cpp
+```
+
+### To generate compile_commands
+```
+xmake project -k compile_commands
 
 ### Rules
 ```

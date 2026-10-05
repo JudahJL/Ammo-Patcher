@@ -172,9 +172,7 @@ Settings& Settings::PopulateFormIDMap() {
         char                      readBuffer[65'535];
         rapidjson::Document       doc;
         rapidjson::FileReadStream bis(file, readBuffer, std::size(readBuffer));
-        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis);
-           doc.ParseStream < rapidjson::kParseCommentsFlag | rapidjson::kParseStopWhenDoneFlag | rapidjson::kParseTrailingCommasFlag,
-           rapidjson::AutoUTF < unsigned >> (eis).HasParseError()) [[unlikely]] {
+        if(rapidjson::AutoUTFInputStream<unsigned, rapidjson::FileReadStream> eis(bis); doc.ParseStream<rapidjson::kParseCommentsFlag | rapidjson::kParseStopWhenDoneFlag | rapidjson::kParseTrailingCommasFlag, rapidjson::AutoUTF<unsigned>>(eis).HasParseError()) {
             SPDLOG_ERROR("Error(offset {}): {}", doc.GetErrorOffset(), rapidjson::GetParseError_En(doc.GetParseError()));
             SPDLOG_ERROR("Loading {} failed", file_path);
         } else {
@@ -240,8 +238,6 @@ std::optional<bool> Settings::IsAllowed(const std::string& file, RE::FormID id) 
         if(*rules.global == Rule::kWhitelist) return true;
         if(*rules.global == Rule::kBlacklist) return false;
     }
-
-    // 3. No decision → use default behavior
     return std::nullopt;
 }
 

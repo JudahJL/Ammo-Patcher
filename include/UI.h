@@ -15,7 +15,7 @@ namespace UI {
 class SMFRenderer
 {
 public:
-    static SMFRenderer& GetSingleton();
+    static SMFRenderer&   GetSingleton();
     static void __stdcall Register();
 #ifndef NDEBUG
     static void __stdcall RenderDebug();

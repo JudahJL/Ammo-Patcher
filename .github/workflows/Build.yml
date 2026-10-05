@@ -2,10 +2,8 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
+    tags:
+      - 'v*'
 env:
   PROJECT_NAME: Ammo_Patcher
 
@@ -14,7 +12,6 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
-    if: ${{ vars.ENABLE_BUILD == 'true' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -43,20 +40,18 @@ jobs:
         echo "PROJECT_VERSION=$version" >> $env:GITHUB_ENV
         echo "version=$version" >> $env:GITHUB_OUTPUT
 
+    - name: Fetch requirements
+      run: xmake q -y
+
     - name: Build releasedbg
-      run: xmake -y Ammo_Patcher
+      run: xmake b Ammo_Patcher
 
     - name: Create 7z archive
       run: |
-        # Create Artifact directory if it doesn't exist
         New-Item -ItemType Directory -Force -Path "contrib/Artifact"
         
-        # Change to contrib/Distribution directory and create 7z archive from there
-        # This makes Distribution the root of the archive
         cd contrib/Distribution
         7z a -t7z -mx=9 "../Artifact/${{ env.PROJECT_NAME }}_${{ env.PROJECT_VERSION }}.7z" "*"
-        
-        # Return to base directory for subsequent steps
         cd ../..
 
     - name: Deploy Artifact

@@ -2,7 +2,6 @@
 
 #include "Settings.h"
 #include "UI.h"
-#include "SKSE-MCP/SKSEMenuFramework.h"
 
 void SKSEEvent::InitializeMessaging() {
     if(!SKSE::GetMessagingInterface()->RegisterListener("SKSE", MessageListener)) {

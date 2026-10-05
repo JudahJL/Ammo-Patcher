@@ -16,7 +16,7 @@ public:
 
     ~ImGuiTreeNodeGuard() noexcept;
 
-    [[nodiscard]] explicit operator bool () const noexcept;
+    [[nodiscard]] explicit operator bool() const noexcept;
 
     ImGuiTreeNodeGuard(const ImGuiTreeNodeGuard&)             = delete;
     ImGuiTreeNodeGuard(ImGuiTreeNodeGuard&&)                  = delete;

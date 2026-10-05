@@ -49,7 +49,10 @@ void SMFRenderer::RenderEditPresets() {
         if(FilePtrManager f{ "data/SKSE/Plugins/Ammo_Patcher.json", "wb" }) {
             auto                u8_path{ Utils::wstringToString(settings.curr_preset.filename()) };
             rapidjson::Document doc{ rapidjson::kObjectType };
-            doc.AddMember("Load", rapidjson::Value{}.SetString(u8_path.c_str(), u8_path.size(), doc.GetAllocator()), doc.GetAllocator());
+            doc.AddMember("Load",
+                          rapidjson::Value{}.SetString(
+                              u8_path.c_str(), static_cast<rapidjson::SizeType>(u8_path.size()), doc.GetAllocator()),
+                          doc.GetAllocator());
             char                       writeBuffer[65'536]{ "" };
             rapidjson::FileWriteStream os{ f.get(), writeBuffer, std::size(writeBuffer) };
             rapidjson::PrettyWriter    writer{ os };
@@ -159,7 +162,8 @@ void SMFRenderer::RenderJsonValue(const char* uniqueID, std::string_view key, ra
                     if(ImGui::Selectable(LogLevels[i].data(), isSelected)) {
                         currentLogLevel = i;
                         value           = rapidjson::Value{}.SetString(
-                            LogLevels[currentLogLevel].data(), LogLevels[currentLogLevel].size(), alloc);
+                            LogLevels[currentLogLevel].data(),
+                            static_cast<rapidjson::SizeType>(LogLevels[currentLogLevel].size()), alloc);
                     }
                     if(isSelected) { ImGui::SetItemDefaultFocus(); }
                 }
@@ -169,7 +173,7 @@ void SMFRenderer::RenderJsonValue(const char* uniqueID, std::string_view key, ra
             char buffer[256];
             strcpy_s(buffer, std::size(buffer), value.GetString());
             if(ImGui::InputText(key.data(), buffer, std::size(buffer), ImGuiInputTextFlags_EnterReturnsTrue)) {
-                value = rapidjson::Value{}.SetString(buffer, strlen(buffer), alloc);
+                value = rapidjson::Value{}.SetString(buffer, static_cast<rapidjson::SizeType>(strlen(buffer)), alloc);
             }
             if(ImGui::IsItemHovered()) {
                 ImGui::SetTooltip(

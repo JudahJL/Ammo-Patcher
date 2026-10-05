@@ -25,4 +25,4 @@ ImGuiTreeNodeGuard::~ImGuiTreeNodeGuard() noexcept {
     if(result) { ImGui::TreePop(); }
 }
 
-ImGuiTreeNodeGuard::operator bool () const noexcept { return result; }
+ImGuiTreeNodeGuard::operator bool() const noexcept { return result; }

@@ -6,12 +6,13 @@ includes ("lib/commonlibsse-ng")
 
 -- set project
 set_project("Ammo_Patcher")
-set_version("3.0.0")
-set_license("Apache-2.0")
+set_version("3.0.1")
+set_license("GPL-3.0-or-later")
 
 -- set defaults
 set_languages("c++23")
 set_warnings("allextra")
+set_encodings("utf-8")
 
 -- set policies
 set_policy("package.requires_lock", true)
@@ -38,7 +39,7 @@ target("Ammo_Patcher")
     -- add commonlibsse-ng plugin
     add_rules("commonlibsse-ng.plugin", {
         name = "Ammo_Patcher",
-        author = "Ersh",
+        author = "JudahJL",
         description = "A simple SKSE plugin built with CommonLibSSE-NG to patch AMMO"
     })
 
@@ -50,29 +51,34 @@ target("Ammo_Patcher")
 
     -- postbuild: copy .dll and .pdb files to contrib/Distribution/data/skse/plugins
     after_build(function(target)
-        import("core.project.depend")
-        import("core.project.task")
+        -- Helper function to copy a file to multiple directories
+        local function copy_file_to_dirs(file, dirs)
+            if not os.isfile(file) then return end
+            for _, dir in ipairs(dirs) do
+                if dir and os.isdir(dir) then
+                    local dest = path.join(dir, path.filename(file))
+                    os.trycp(file, dest)
+                    print("Copied %s to %s", file, dest)
+                end
+            end
+        end
+
+        -- Always copy files after build, don't rely on dependency tracking
+        local target_file = target:targetfile()
+        local symbol_file = target:symbolfile()
+        local dest_dir = "contrib/Distribution/data/skse/plugins"
+
+        -- Optional secondary folder for MO2
+        local mo2_dir = os.getenv("MO2_MODS_DIR")
+        local secondary_dir
+        if mo2_dir then
+            secondary_dir = path.join(mo2_dir, "testing/skse/plugins")
+        end
         
-        depend.on_changed(function()
-            local target_file = target:targetfile()
-            local symbol_file = target:symbolfile()
-            local dest_dir = "contrib/Distribution/data/skse/plugins"
-            
-            -- ensure destination directory exists
-            os.mkdir(dest_dir)
-            
-            -- copy .dll file
-            if os.isfile(target_file) then
-                local dll_dest = path.join(dest_dir, path.filename(target_file))
-                os.trycp(target_file, dll_dest)
-                print("Copied %s to %s", target_file, dll_dest)
-            end
-            
-            -- copy .pdb file if it exists
-            if os.isfile(symbol_file) then
-                local pdb_dest = path.join(dest_dir, path.filename(symbol_file))
-                os.trycp(symbol_file, pdb_dest)
-                print("Copied %s to %s", symbol_file, pdb_dest)
-            end
-        end, { changed = target:is_rebuilt(), files = { target:targetfile() } })
+        -- ensure destination directory exists
+        os.mkdir(dest_dir)
+        
+        -- Copy both .dll and .pdb to all relevant folders
+        copy_file_to_dirs(target_file, {dest_dir, secondary_dir})
+        copy_file_to_dirs(symbol_file, {dest_dir, secondary_dir})
     end)

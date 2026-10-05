@@ -67,42 +67,15 @@ namespace Utils {
 
     template<typename T>
     requires std::is_integral_v<T> || std::is_floating_point_v<T>
-    // ReSharper disable once CppNotAllPathsReturnValue
     [[nodiscard]] auto getRandom(T lower_bound, T upper_bound) -> T {
         if constexpr(std::is_integral_v<T>) {
             std::uniform_int_distribution<T> distributor(lower_bound, upper_bound);
             return distributor(gen);
-        } else if constexpr(std::is_floating_point_v<T>) {
-            std::uniform_real_distribution<T> distributor(lower_bound, upper_bound);
-            return distributor(gen);
         }
+        std::uniform_real_distribution<T> distributor(lower_bound, upper_bound);
+        return distributor(gen);
     }
 
-    /**
-	 * \brief Creates a null-terminated std::array filled with a specified character.
-	 *
-
-
-     * * * This function creates a `std::array` of size `N + 1` where the first `N` elements
-	 *
-     * are
-     * filled with `FillChar`, and the last element is set to `'\0'` to make the array
-
-     * * a
-     * null-terminated C-style string.
-	 *
-	 * \tparam N The size of the array excluding
-     * the null
-     * terminator.
-	 * \tparam FillChar The character used to fill the array.
-	 *
-
-     * * \return A
-     * `std::array<char, N + 1>` with `N` elements filled with `FillChar` and
-
-     * *         a null
-     * terminator at the end.
-	 */
     template<std::size_t N, char FillChar>
     [[nodiscard]] constexpr auto make_filled_char_array() -> std::array<char, N + 1> {
         std::array<char, N + 1> arr{};

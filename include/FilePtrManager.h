@@ -61,9 +61,9 @@ public:
         return *this;
     }
 
-    [[nodiscard]] operator FILE* () noexcept { return fp; }
+    [[nodiscard]] operator FILE*() noexcept { return fp; }
 
-    [[nodiscard]] operator FILE* () const noexcept { return fp; }
+    [[nodiscard]] operator FILE*() const noexcept { return fp; }
 
     [[nodiscard]] FILE* get() noexcept { return fp; }
 
@@ -71,7 +71,7 @@ public:
 
     [[nodiscard]] errno_t error() const noexcept { return err; }
 
-    [[nodiscard]] explicit operator bool () const noexcept { return fp != nullptr && err == 0; }
+    [[nodiscard]] explicit operator bool() const noexcept { return fp != nullptr && err == 0; }
 
 private:
     FILE*   fp{};

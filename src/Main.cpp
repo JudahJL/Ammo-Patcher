@@ -1,6 +1,6 @@
 #include "Events.h"
 #include "Settings.h"
-#include "logging.h"
+#include <spdlog/spdlog.h>
 #include "timeit.h"
 
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
@@ -9,10 +9,23 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
     //     constexpr auto wait_time{ 5s };
     //     std::this_thread::sleep_for(wait_time);
     // }
-    InitializeLogging();
     {
         [[maybe_unused]] const timeit t;
-        SKSE::Init(a_skse, false);
+#ifndef NDEBUG
+        auto pattern = std::format("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [{}.dll,%s:%#] %v", SKSE::GetPluginName());  // TODO: make this compile time later
+#endif
+
+        SKSE::Init(a_skse, {
+                               .logLevel = spdlog::level::trace,
+#ifndef NDEBUG
+                               .logPattern = pattern.data(),
+#else
+                               .logPattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v",
+#endif
+                           });
+        spdlog::flush_on(spdlog::level::off);
+        auto plugin = SKSE::PluginDeclaration::GetSingleton();
+        logger::info("{} v{} is loading...", plugin->GetName(), plugin->GetVersion().string("."));
         Settings::GetSingleton().PopulateFormIDMap().LoadSchema().LoadPresets().SetLogAndFlushLevel();
         SKSEEvent::InitializeMessaging();
     }
